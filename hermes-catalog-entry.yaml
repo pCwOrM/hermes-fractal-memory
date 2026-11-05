@@ -1,0 +1,21 @@
+name: fractal-memory-engine
+repo: https://github.com/pCwOrM/hermes-fractal-memory
+sha: PLACEHOLDER_COMMIT_SHA
+tier: community
+description: >-
+  Hierarchical zero-storage episodic memory, procedural attractor clustering,
+  and O(1) coordinate anchoring for Hermes Agent. Eliminates vector database bloat
+  and context dilution via 3-ring orbital resonance decay.
+category: memory
+maintainer: pCwOrM
+capabilities:
+  provides_tools:
+    - fractal_remember
+    - fractal_recall
+    - fractal_consolidate
+    - fractal_memory_inspect
+    - fractal_memory_wipe
+  provides_hooks:
+    - pre_agent_step
+    - post_agent_step
+requires_env: []

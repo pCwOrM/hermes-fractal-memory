@@ -1,0 +1,22 @@
+name: fractal-memory-engine
+version: "1.0.0"
+description: >-
+  Hierarchical zero-storage episodic memory, procedural attractor clustering,
+  and O(1) coordinate anchoring for Hermes Agent. Eliminates vector database bloat
+  and context dilution via 3-ring orbital resonance decay.
+maintainer: pCwOrM
+tier: community
+category: memory
+requires_hermes: ">=0.21.0"
+platforms: []
+capabilities:
+  provides_tools:
+    - fractal_remember
+    - fractal_recall
+    - fractal_consolidate
+    - fractal_memory_inspect
+    - fractal_memory_wipe
+  provides_hooks:
+    - pre_agent_step
+    - post_agent_step
+requires_env: []
