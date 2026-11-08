@@ -1,6 +1,6 @@
 name: fractal-memory-engine
 repo: https://github.com/pCwOrM/hermes-fractal-memory
-sha: 908daf2d7c481b79b6d657a69adfe2ce25a3a336
+sha: 8bac3d96f8ea6c7ea3eaf60e75a7f23cd80b3a45
 version: "1.0.1"
 description: >-
   Hierarchical vectorless episodic memory, procedural attractor clustering,
