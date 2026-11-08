@@ -18,7 +18,7 @@ except (ImportError, ValueError):
     from memory_core import get_memory_engine  # type: ignore
 
 __version__ = "1.0.1"
-__author__ = "Volkan Dagli (pCwOrM)"
+__author__ = "Volkan Dagli"
 
 logger = logging.getLogger(__name__)
 

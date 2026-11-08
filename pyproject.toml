@@ -7,7 +7,7 @@ name = "hermes-fractal-memory"
 version = "1.0.1"
 description = "Hierarchical vectorless episodic memory, procedural attractor clustering, and O(1) coordinate anchoring for Hermes Agent."
 readme = "README.md"
-authors = [{ name = "Volkan Dagli (pCwOrM)", email = "pcworm@pcworm.net" }]
+authors = [{ name = "Volkan Dagli", email = "ask@answerr.me" }]
 license = { text = "MIT" }
 classifiers = [
     "Programming Language :: Python :: 3",

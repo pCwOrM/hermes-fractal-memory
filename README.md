@@ -9,7 +9,7 @@
 [![Hackathon: Nous Research](https://img.shields.io/badge/Nous%20Research-Plugin%20Hackathon%202026-orange.svg)](https://x.com/NousResearch)
 
 > **Official Submission for The Hermes Agent Plugin Hackathon by Nous Research (Nov 2026)**  
-> *Developed solo by [@pCwOrM](https://github.com/pCwOrM) / Volkan Dağlı.*
+> *Developed solo by [@pCwOrM](https://github.com/pCwOrM) / Volkan Dagli.*
 
 ---
 
@@ -224,5 +224,5 @@ hermes plugins validate . --install-deps
 
 ## ## 📜 License & Citations
 
-Licensed under the **MIT License**. Created by **Volkan Dağlı ([@pCwOrM](https://github.com/pCwOrM))**.  
+Licensed under the **MIT License**. Created by **Volkan Dagli ([@pCwOrM](https://github.com/pCwOrM))**.  
 Part of the open-source **Fractal Neural Synthesis (FNS)** and **WERR Canonical Research Corpus**.

@@ -5,7 +5,7 @@ description: >-
   and O(1) complex coordinate anchoring for Hermes Agent. Eliminates external
   vector database and embedding model overhead via 3-ring orbital resonance
   decay and local JSON state persistence under HERMES_HOME/plugin-data.
-author: "Volkan Dagli (pCwOrM)"
+author: "Volkan Dagli"
 license: "MIT"
 homepage: "https://github.com/pCwOrM/hermes-fractal-memory"
 requires_hermes: ">=0.21.0"
