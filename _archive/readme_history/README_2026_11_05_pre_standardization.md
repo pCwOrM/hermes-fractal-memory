@@ -190,9 +190,9 @@ tests/test_tools.py::test_cli_slash_commands PASSED                       [100%]
 
 1. Install into your local Hermes Agent environment:
    ```bash
-   git clone https://github.com/pCwOrM/hermes-fractal-memory.git
+   hermes plugins install pCwOrM/hermes-fractal-memory
    cd hermes-fractal-memory
-   pip install -e .
+   hermes plugins enable fractal-memory-engine
    ```
 2. Validate with the Hermes Plugin CLI:
    ```bash

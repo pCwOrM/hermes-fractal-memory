@@ -1,10 +1,10 @@
 # 🌀 Hermes Fractal Memory Engine
 
-> **Hierarchical Zero-Storage Episodic Memory, Procedural Attractor Clustering, and $O(1)$ Coordinate Anchoring for [Hermes Agent](https://hermes-agent.nousresearch.com) (Nous Research).**
+> **Hierarchical Vectorless Episodic Memory, Procedural Attractor Clustering, and $O(1)$ Complex Coordinate Anchoring for [Hermes Agent](https://hermes-agent.nousresearch.com) (Nous Research).**
 
 [![Hermes Agent Plugin v2](https://img.shields.io/badge/Hermes%20Plugin-v2%20Compliant-blue.svg)](https://hermes-agent.nousresearch.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Tests: 15 Passed](https://img.shields.io/badge/Tests-15%2F15%20Passed-brightgreen.svg)](#testing)
+[![Tests: 18 Passed](https://img.shields.io/badge/Tests-18%2F18%20Passed-brightgreen.svg)](#testing)
 [![Category: Memory](https://img.shields.io/badge/Category-Memory%20Layer-purple.svg)](plugin.yaml)
 [![Hackathon: Nous Research](https://img.shields.io/badge/Nous%20Research-Plugin%20Hackathon%202026-orange.svg)](https://x.com/NousResearch)
 
@@ -13,30 +13,37 @@
 
 ---
 
+## 🔒 Disclosure & Operational Scope
+
+**Disclosure —** `fractal-memory-engine` runs **100% locally** inside the Hermes Agent Python process with **zero external network calls**, **zero third-party API keys**, and **zero background processes or shell execution**:
+- **Local State Persistence:** Memory items and turn counters are persisted as UTF-8 JSON inside the sanctioned Hermes per-plugin data directory (`<HERMES_HOME>/plugin-data/fractal-memory-engine/fractal_memory.json` via `plugins.plugin_storage.plugin_data_dir`), or at a user-configured `storage_path`.
+- **Turn Context Injection (`pre_llm_call`):** Before each LLM turn, `pre_llm_call` queries the local 3-ring memory manifold against the active user prompt and returns a compact `<150 token` context block (`{"context": "[FRACTAL-ACTIVE-MEMORY...]"}`) when resonant memories exceed `min_recall_resonance` (default `0.30`). Can be toggled via `auto_inject_context`.
+- **Orbital Decay (`post_llm_call`):** After each completed turn, `post_llm_call` applies exponential half-life decay to Ring 1 (Sensory, $\times 0.82$) and Ring 2 (Task, $\times 0.96$) while keeping Ring 3 (Invariant Core, $\times 1.00$) permanent, and triggers automatic consolidation when Sensory buffer occupancy reaches 75%.
+
+---
+
 ## ⚡ The Memory Wall Problem in Autonomous Agents
 
 Autonomous AI agents face a crippling architectural bottleneck when running complex, multi-turn, real-world tasks:
-1. **The Vector Database Bloat ($O(N)$ Spatial Explosion):** Storing millions of dense embedding vectors in RAM or local vector databases (Chroma, FAISS) causes linear latency growth, disk bloat, and heavy memory footprints on edge/desktop machines.
-2. **Context Dilution & Forgetting:** Dumping conversational history or raw RAG chunks into the prompt saturates the context window, triggers attention degradation, and leads to hallucinations.
-3. **No Organic Memory Consolidation:** Existing agents treat yesterday's transient API error with the same weight as permanent user preferences or foundational system invariants.
+1. **Vector Database & Embedding Overhead ($O(N)$ Bloat):** Running heavy embedding models or local vector databases (Chroma, FAISS, Qdrant) introduces external dependencies, API costs, RAM bloat, and startup latency on edge/desktop machines.
+2. **Context Dilution & Forgetting:** Dumping raw conversational history or verbose RAG chunks into the prompt saturates the context window, breaks prompt caching, and triggers attention degradation.
+3. **Lack of Biological Consolidation:** Traditional memory stores treat yesterday's transient log output with the same permanence as foundational user rules or system invariants.
 
-The **Hermes Fractal Memory Engine** (`fractal-memory-engine`) solves this fundamentally. Instead of maintaining static gigabytes of vector tables, memories are projected onto a **compact, continuous coordinate manifold** ($c \in \mathbb{C}$) and governed by a **3-Ring Orbital Resonance Hierarchy** with polynomial escape-time decay.
+The **Hermes Fractal Memory Engine** (`fractal-memory-engine`) solves this deterministically. Instead of external vector databases, memories are anchored onto a **continuous complex coordinate manifold** ($c \in [-2.0, 0.5] \times [-1.2, 1.2]$) with polynomial escape-time depth ($z_{n+1} = z_n^2 + c$) and governed by a **3-Ring Orbital Resonance Hierarchy**.
 
 ---
 
 ## 🏛️ 3-Tier Orbital Memory Architecture
 
-Inspired by biological memory consolidation and procedural dynamical systems, memory is organized into 3 concentric orbit rings:
-
 ```
-                          [ INCOMING USER PROMPT / AGENT EVENT ]
+                          [ INCOMING USER PROMPT / AGENT TURN ]
                                              │
                         ┌────────────────────┴────────────────────┐
                         │                                         │
-               [pre_agent_step Hook]                    [post_agent_step Hook]
-               • Queries Resonant Attractors            • Intercepts New Facts
-               • Injects [FRACTAL-ACTIVE-MEMORY]        • Applies Orbital Decay
-               • Zero Context Dilution (<150 tokens)    • Auto-Consolidates at 75%
+                [pre_llm_call Hook]                      [post_llm_call Hook]
+                • Queries Resonant Attractors            • Advances Turn Counter
+                • Returns {"context": ...}               • Applies Orbital Decay
+                • Preserves System Prompt Cache          • Auto-Consolidates at 75%
                         │                                         │
                         ▼                                         ▼
    ╔═════════════════════════════════════════════════════════════════════════════╗
@@ -71,15 +78,17 @@ Inspired by biological memory consolidation and procedural dynamical systems, me
 
 ---
 
-## 🛠️ Provided Tools
+## 🛠️ Provided Tools (`toolset="memory"`)
+
+All 5 tool handlers accept `(args: dict, **kwargs)` and return a structured JSON string:
 
 ### 1. `fractal_remember`
 Stores or updates a memory atom on the manifold with automatic or explicit ring assignment.
-* **Input Schema:**
+* **Input:**
   ```json
   {
     "key": "user_preferences",
-    "content": "User prefers concise Python code and strictly forbids hallucinating library versions.",
+    "content": "User prefers concise Python code and strictly forbids unverified dependencies.",
     "ring": "invariant",
     "salience": 0.95,
     "tags": ["coding_rules", "python"]
@@ -92,166 +101,87 @@ Stores or updates a memory atom on the manifold with automatic or explicit ring 
     "key": "user_preferences",
     "ring": "invariant",
     "salience": 0.95,
-    "cx": -0.7436,
-    "cy": 0.1318,
+    "cx": -0.743612,
+    "cy": 0.131844,
     "escape_time": 24,
     "state_seal": "[FRACTAL-MEM-SEAL:d41d8cd98f00b204]"
   }
   ```
 
 ### 2. `fractal_recall`
-Retrieves top-$K$ resonant memories matching a natural language prompt via composite lexical and coordinate proximity scoring:
-$$R(q, m) = \big(0.55 \cdot S_{\text{lex}}(q, m) + 0.45 \cdot S_{\text{geom}}(q, m)\big) \times m.\text{salience} \times \text{Stability} \times W_{\text{ring}}$$
-* **Input:** `query: "What are the user's coding constraints?", "limit": 3`
-* **Output:** Sorted memories with computed resonance coefficients and automatic Hebbian access tracking.
+Retrieves top-$K$ resonant memories matching a natural language prompt via composite lexical Jaccard, character trigram morphology, and complex-plane geometric proximity scoring:
+$$R(q, m) = \big(0.55 \cdot S_{\text{lex+tri}}(q, m) + 0.45 \cdot S_{\text{geom}}(q, m)\big) \times m.\text{salience} \times \text{Stability} \times W_{\text{ring}}$$
+* **Input:** `{"query": "What are the user's coding constraints?", "limit": 3}`
+* **Output:** JSON array of sorted memories with computed resonance scores and automatic Hebbian access reinforcement.
 
 ### 3. `fractal_consolidate`
-Mimics biological slow-wave sleep memory consolidation:
-* Promotes frequently accessed task memories ($S \ge 0.80$, accesses $\ge 3$) into the Invariant Core.
+Executes orbital memory consolidation across rings:
+* Promotes frequently accessed task memories ($S \ge 0.80$, accesses $\ge 3$) into the zero-decay Invariant Core.
 * Prunes decayed ephemeral noise ($S < 0.35$) from Ring 1 & Ring 2.
 
 ### 4. `fractal_memory_inspect`
-Inspects real-time ring occupancy, decay telemetry, total items, and cryptographic state seals.
+Inspects real-time ring occupancy, decay telemetry, total items, storage path, and the SHA-256 cryptographic state seal.
 
 ### 5. `fractal_memory_wipe`
-Protected memory reset tool with safety confirmation flag (`confirm: true`), supporting selective wiping of sensory, task, or full reset.
+Protected memory reset tool with mandatory safety confirmation flag (`confirm: true`), supporting selective wiping of `sensory`, `task`, `all_non_invariant`, or `full_factory_reset`.
 
 ---
 
-## ⚡ Lifecycle Hooks
+## ⚡ Lifecycle Hooks (`pre_llm_call` & `post_llm_call`)
 
-Hermes Agent executes autonomous loops. This plugin hooks into the agent lifecycle to make memory invisible, autonomous, and zero-effort:
-
-1. **`pre_agent_step` (`fractal_pre_step_injector`):**
-   * Intercepts the user message before tool execution.
-   * Pulls the most resonant invariants and task memories ($R \ge 0.30$).
-   * Injects a compact `<150 token` context block (`[FRACTAL-ACTIVE-MEMORY]`) directly into the agent's context.
-2. **`post_agent_step` (`fractal_post_step_decay`):**
-   * Advances the turn counter.
-   * Applies orbital decay across Ring 1 ($\times 0.82$) and Ring 2 ($\times 0.96$).
-   * Triggers automatic consolidation when the sensory buffer reaches 75% capacity.
+1. **`pre_llm_call` (`pre_llm_call_hook`):**
+   * Fires once per turn before the tool-calling loop.
+   * Queries the manifold for the top 3 memories exceeding `min_recall_resonance` (default `0.30`).
+   * Returns `{"context": "[FRACTAL-ACTIVE-MEMORY: Top Resonant Invariants & Context]\n..."}`, which Hermes appends to the current turn's user message while preserving the system prompt cache prefix.
+2. **`post_llm_call` (`post_llm_call_hook`):**
+   * Fires once per turn after the tool-calling loop completes.
+   * Advances the turn counter, applies orbital decay across Ring 1 ($\times 0.82$) and Ring 2 ($\times 0.96$), and triggers automatic consolidation when the sensory buffer reaches 75% capacity.
 
 ---
 
-## ⌨️ CLI Slash Commands
+## ⌨️ In-Session Slash Commands
 
-* **/memory:** Displays a rich ASCII telemetry dashboard showing ring capacities, decay factors, and state seals:
+* **`/fractal`:** Displays a rich ASCII telemetry dashboard showing ring capacities, decay factors, storage path, and the SHA-256 state seal:
   ```text
   🌀 Hermes Fractal Memory Telemetry 🌀
   ========================================
-  State Seal: [FRACTAL-MEM-SEAL:e8b420261105af71]
-  Turn Count: 14 | Total Items: 28
+  State Seal : [FRACTAL-MEM-SEAL:e8b420261105af71]
+  Turn Count : 14 | Total Items: 28
+  Data File  : ~/.hermes/plugin-data/fractal-memory-engine/fractal_memory.json
   ----------------------------------------
-  • Ring 1 (Sensory 0.60x) : 8/64 items (Decay: 0.82)
-  • Ring 2 (Task 1.00x)    : 14/128 items (Decay: 0.96)
-  • Ring 3 (Invariant 1.60x: 6/1024 items (Decay: 1.00)
+  • Ring 1 (Sensory 0.60x)  : 8/64 items (Decay: 0.82)
+  • Ring 2 (Task 1.00x)     : 14/128 items (Decay: 0.96)
+  • Ring 3 (Invariant 1.60x): 6/1024 items (Decay: 1.00)
   ========================================
   Tip: Use /remember <key> <content> to pin an invariant rule directly.
   ```
-* **/remember `<key>` `<content>`:** Instant shortcut to anchor a permanent invariant directly into Ring 3.
+* **`/remember <key> <content>`:** Instant shortcut to anchor a permanent invariant directly into Ring 3.
 
 ---
 
-## 🧪 Testing
+## ⚙️ Configuration (`config_schema`)
 
-The repository ships with an exhaustive automated test suite covering Plugin Doctor manifest validation, mathematical coordinate projection, Hebbian promotion, orbital decay, and tool handlers:
+Configurable under `plugins.entries.fractal-memory-engine.settings` in `config.yaml` or via the Hermes Desktop Settings → Plugins UI:
+
+| Setting | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `storage_path` | `str` | `""` | Custom file path for `fractal_memory.json`. Defaults to `<HERMES_HOME>/plugin-data/fractal-memory-engine/fractal_memory.json`. |
+| `auto_inject_context` | `bool` | `true` | Automatically inject top resonant memories into `pre_llm_call` turn context. |
+| `min_recall_resonance` | `float` | `0.30` | Minimum composite resonance score (`0.0` to `1.0`) required for automatic `pre_llm_call` injection. |
+
+---
+
+## 🧪 Testing & Admission Validation
 
 ```bash
-# Run the test suite
+# Run the full pytest suite (manifest, catalog schema, hooks, tools, and manifold math)
 python -m pytest tests/ -v
-```
 
-```text
-============================= test session starts =============================
-collected 15 items
-
-tests/test_doctor.py::test_manifest_structure PASSED                     [  6%]
-tests/test_doctor.py::test_register_context_wiring PASSED                 [ 13%]
-tests/test_hooks.py::test_pre_step_injection PASSED                       [ 20%]
-tests/test_hooks.py::test_post_step_decay PASSED                          [ 26%]
-tests/test_memory_core.py::test_coordinate_projection_bounds PASSED     [ 33%]
-tests/test_memory_core.py::test_three_ring_auto_assignment PASSED        [ 40%]
-tests/test_memory_core.py::test_recall_and_hebbian_promotion PASSED     [ 46%]
-tests/test_memory_core.py::test_orbital_decay_and_consolidation PASSED   [ 53%]
-tests/test_memory_core.py::test_cryptographic_state_seal PASSED          [ 60%]
-tests/test_tools.py::test_fractal_remember_tool PASSED                    [ 66%]
-tests/test_tools.py::test_fractal_recall_tool PASSED                      [ 73%]
-tests/test_tools.py::test_fractal_memory_inspect_tool PASSED              [ 80%]
-tests/test_tools.py::test_fractal_consolidate_tool PASSED                 [ 86%]
-tests/test_tools.py::test_fractal_memory_wipe_protection PASSED          [ 93%]
-tests/test_tools.py::test_cli_slash_commands PASSED                       [100%]
-
-============================= 15 passed in 0.26s ==============================
+# Validate with Hermes Plugin CLI
+hermes plugins validate . --install-deps
 ```
 
 ---
-
-## 📦 Installation & Submission to Hermes Catalog
-
-1. Install into your local Hermes Agent environment:
-   ```bash
-   git clone https://github.com/pCwOrM/hermes-fractal-memory.git
-   cd hermes-fractal-memory
-   pip install -e .
-   ```
-2. Validate with the Hermes Plugin CLI:
-   ```bash
-   hermes plugins validate .
-   ```
-3. Catalog Entry (`plugin-catalog/fractal-memory-engine.yaml`):
-   ```yaml
-   name: fractal-memory-engine
-   repo: https://github.com/pCwOrM/hermes-fractal-memory
-   sha: <LATEST_COMMIT_SHA>
-   tier: community
-   description: >-
-     Hierarchical zero-storage episodic memory, procedural attractor clustering,
-     and O(1) coordinate anchoring for Hermes Agent. Eliminates vector database bloat
-     and context dilution via 3-ring orbital resonance decay.
-   category: memory
-   maintainer: pCwOrM
-   capabilities:
-     provides_tools:
-       - fractal_remember
-       - fractal_recall
-       - fractal_consolidate
-       - fractal_memory_inspect
-       - fractal_memory_wipe
-     provides_hooks:
-       - pre_agent_step
-       - post_agent_step
-   requires_env: []
-   ```
-
----
-
-
----
-
-## 🏛️ Associated Formal Verification, World Records & Scientific Corpus
-
-All monographs, formal Lean 4 specifications, and empirical datasets across the **WERR & ITouch Systems Research Group** are permanently archived on **CERN Zenodo**, **arXiv**, **Elsevier SSRN**, and **Hugging Face**.  
-*(Primary links use **CERN Zenodo Concept DOIs / Çatı DOI**, which automatically resolve to the latest published version while preserving exact version-pinned reproducibility.)*
-
-| # | Pillar / Monograph | Core Contribution & Focus | 👑 Concept DOI (Always Latest) | 📌 Latest Version DOI | arXiv / SSRN / Hugging Face & Verification Status | Primary Repository |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **01** | **Paper 1: FNS** | Procedural Weight Derivation & Non-Linear Decision Boundaries (v3) | [**`10.5281/zenodo.22774934`**](https://doi.org/10.5281/zenodo.22774934) | [`10.5281/zenodo.22867037`](https://doi.org/10.5281/zenodo.22867037) | [**SSRN: 7659198**](https://papers.ssrn.com/abstract=7659198) *(Distributed)* • Multi-Seed Pareto & Manifold Parity | [`pCwOrM/fractal-neural-synthesis`](https://github.com/pCwOrM/fractal-neural-synthesis) |
-| **02** | **Paper 2: OED** | Orbital Error Dynamics, Ephemeral Parameter Resonance & CD4+ Gating (v1) | [**`10.5281/zenodo.22900464`**](https://doi.org/10.5281/zenodo.22900464) | [`10.5281/zenodo.22900465`](https://doi.org/10.5281/zenodo.22900465) | [`arXiv:2609.30115`](https://arxiv.org/abs/2609.30115) • [🤗 HF Paper](https://huggingface.co/papers/2609.30115) *(Verified)* • `TR 2026/016285` | [`pCwOrM/fractal-neural-synthesis`](https://github.com/pCwOrM/fractal-neural-synthesis) |
-| **03** | **Paper 3: WERR Map** | Universal Natural Language Decision Map & Real-Time Edge Triage (v2) | [**`10.5281/zenodo.22867425`**](https://doi.org/10.5281/zenodo.22867425) | [`10.5281/zenodo.22939253`](https://doi.org/10.5281/zenodo.22939253) | [`arXiv:2609.25498`](https://arxiv.org/abs/2609.25498) • [🤗 HF Paper](https://huggingface.co/papers/2609.25498) • [🤗 HF Dataset](https://huggingface.co/datasets/pCwOrM/werr_open_decisions) | [`pCwOrM/werr`](https://github.com/pCwOrM/werr) • [`pCwOrM/answerr`](https://github.com/pCwOrM/answerr) |
-| **04** | **Paper 4: Werracle** | Sub-Cent Intra-Block AI Reflex Oracles & Flash-Loan Circuit Breakers (v1) | [**`10.5281/zenodo.22942598`**](https://doi.org/10.5281/zenodo.22942598) | [`10.5281/zenodo.22942599`](https://doi.org/10.5281/zenodo.22942599) | [`arXiv:2609.30719`](https://arxiv.org/abs/2609.30719) • [**SSRN: 7626279**](https://papers.ssrn.com/abstract=7626279) • [🤗 HF Paper](https://huggingface.co/papers/2609.30719) | [`pCwOrM/werracle`](https://github.com/pCwOrM/werracle) • [`pCwOrM/werralem`](https://github.com/pCwOrM/werralem) |
-| **05** | **Paper 5: Formal Lean 4** | Zero-Storage Procedural Synthesis: Lean 4 Verification & 40-Core Validation | [**`10.5281/zenodo.22774934`**](https://doi.org/10.5281/zenodo.22774934) | [`10.5281/zenodo.22867037`](https://doi.org/10.5281/zenodo.22867037) | [`arXiv:2609.33066`](https://arxiv.org/abs/2609.33066) • [🤗 HF Paper](https://huggingface.co/papers/2609.33066) • **Lean 4 (`10 Theorems, 0 sorry`)** | [`pCwOrM/werr`](https://github.com/pCwOrM/werr) • [`pCwOrM/werracle`](https://github.com/pCwOrM/werracle) |
-| **06** | **Paper 6: GAP-Lean4** | Machine-Checked Computational Group Theory: Schreier-Sims & BSGS Sifting (v2) | [**`10.5281/zenodo.23092708`**](https://doi.org/10.5281/zenodo.23092708) | [`10.5281/zenodo.23156544`](https://doi.org/10.5281/zenodo.23156544) | [`arXiv:2609.38492`](https://arxiv.org/abs/2609.38492) • [🤗 HF Paper](https://huggingface.co/papers/2609.38492) • **Lean 4 (`35 Theorems, 0 sorry`)** | [`pCwOrM/gap-lean4-port`](https://github.com/pCwOrM/gap-lean4-port) |
-| **07** | **Paper 7: Black Hole v5** | Unitary Black Hole Page Curve via Dynamical Horizon Orbifolds & GKP Stabilizers (v5) | [**`10.5281/zenodo.22961999`**](https://doi.org/10.5281/zenodo.22961999) | [`10.5281/zenodo.23072120`](https://doi.org/10.5281/zenodo.23072120) | `S(t=1) = 0.00` · `Tr(ρ²) = 1.00` · `R² = 0.9822` · **573× Stress Quench** • **Lean 4 (`10 Theorems`)** | [`pCwOrM/fractal-neural-synthesis`](https://github.com/pCwOrM/fractal-neural-synthesis) • [`pCwOrM/werr`](https://github.com/pCwOrM/werr) |
-| **08** | **Paper 8: WerrSoma** | Bio-Synthetic Neuromorphic Interfacing with 158K-Neuron *Drosophila* Connectome (v1) | [**`10.5281/zenodo.22996625`**](https://doi.org/10.5281/zenodo.22996625) | [`10.5281/zenodo.22996626`](https://doi.org/10.5281/zenodo.22996626) | `arXiv:submit/8161759` • [Live 3D Portal (`werrsoma.answerr.me`)](https://werrsoma.answerr.me/) • `TR 2026/016633` | [`Lexovian/WerrSoma`](https://github.com/Lexovian/WerrSoma) • [`pCwOrM/WerrSoma`](https://github.com/pCwOrM/WerrSoma) |
-| **09** | **Paper 9: WerreduR** | Procedural Pedagogy: Resolving the Saturn School Disequilibrium Paradox (v2) | [**`10.5281/zenodo.22999420`**](https://doi.org/10.5281/zenodo.22999420) | [`10.5281/zenodo.23128224`](https://doi.org/10.5281/zenodo.23128224) | [**SSRN: 7641538**](https://papers.ssrn.com/abstract=7641538) *(Distributed)* • **Lean 4 (`7 Theorems, 0 sorry`)** • [Live Portal](https://pcworm.github.io/WerreduR/) | [`jesmaat/WerreduR`](https://github.com/jesmaat/WerreduR) • [`pCwOrM/WerreduR`](https://github.com/pCwOrM/WerreduR) |
-| **10** | **Paper 10: Schönhage** | Bipartite Carrier Compression in Schönhage Trilinear Multiplication Tensors (v2) | [**`10.5281/zenodo.23232541`**](https://doi.org/10.5281/zenodo.23232541) | [`10.5281/zenodo.23295370`](https://doi.org/10.5281/zenodo.23295370) | [`arXiv:2610.14263`](https://arxiv.org/abs/2610.14263) • [🤗 HF Paper](https://huggingface.co/papers/2610.14263) • [CrocSwap #226 (`50d76881`)](https://github.com/CrocSwap/integer-mult-bounds/pull/226) | [`pCwOrM/integer-mult-bounds`](https://github.com/pCwOrM/integer-mult-bounds) |
-| **11** | **Paper 11: Güneş Dili** | Deterministic Morpho-Semantic Tokenization & Algebraic Morphotactics in Lean 4 (v1) | [**`10.5281/zenodo.23003711`**](https://doi.org/10.5281/zenodo.23003711) | [`10.5281/zenodo.23003712`](https://doi.org/10.5281/zenodo.23003712) | `arXiv:submit/8248674` • **Lean 4 (`4 Theorems, 0 sorry`)** • [Live Studio](https://pcworm.github.io/gunes-dili/) | [`pCwOrM/gunes-dili`](https://github.com/pCwOrM/gunes-dili) |
-| **12** | **Paper 12: Niemeier A₈³** | Machine-Certified 24D Niemeier Lattice A₈³, K3 Hodge Duality & Umbral Moonshine (v1) | [**`10.5281/zenodo.23324066`**](https://doi.org/10.5281/zenodo.23324066) | [`10.5281/zenodo.23324067`](https://doi.org/10.5281/zenodo.23324067) | **Lean 4 (`0 sorry, 0 axioms`)** • `χ(X) = 24` · `order(G_glue) = 27` · `ℓ = 9` | [`pCwOrM/niemeier-a8-umbral-moonshine`](https://github.com/pCwOrM/niemeier-a8-umbral-moonshine) |
-| **13** | **Paper 13: GDT v3.0** | Machine-Certified Lean 4 Formalization of the General Divisor Theorem (v2) | [**`10.5281/zenodo.23316068`**](https://doi.org/10.5281/zenodo.23316068) | [`10.5281/zenodo.23425590`](https://doi.org/10.5281/zenodo.23425590) | **Lean 4 (`81 Theorems, 0 sorry`)** • Companion v1: [`10.5281/zenodo.23426323`](https://doi.org/10.5281/zenodo.23426323) ([`v1: 23426324`](https://doi.org/10.5281/zenodo.23426324)) | [`pCwOrM/general-divisor-theorem`](https://github.com/pCwOrM/general-divisor-theorem) |
-| **14** | **Paper 14: Elliptic Sieve** | Multi-Layer Algebraic Sieve & Vélu Isogeny Engine: 230 Curves on NSF ICARM (v1) | [**`10.5281/zenodo.23436282`**](https://doi.org/10.5281/zenodo.23436282) | [`10.5281/zenodo.23436283`](https://doi.org/10.5281/zenodo.23436283) | [**NSF ICARM Leaderboard (`user/114`)**](https://elliptic-rank.icarm.cloud/user/114): **30x #1 Gold Records**, 80 Top-3, 100% `log N` | [`pCwOrM/werr-elliptic-sieve`](https://github.com/pCwOrM/werr-elliptic-sieve) |
-| **15** | **Paper 15: Empirical OEV** | Empirical OEV & Liquidation Dynamics: Chainlink SVR on Base & Ethereum L1 (v2) | [**`10.5281/zenodo.23623588`**](https://doi.org/10.5281/zenodo.23623588) | [`10.5281/zenodo.23642090`](https://doi.org/10.5281/zenodo.23642090) | [🤗 HF Dataset (`1.16k+ views, 126 likes`)](https://huggingface.co/datasets/pCwOrM/werracle-oev-liquidation-dataset-2026) • 94.4% Aggregate / 98.3% Median SVR Recapture | [`pCwOrM/werracle`](https://github.com/pCwOrM/werracle) • [`pCwOrM/werrealm`](https://github.com/pCwOrM/werrealm) |
-| **HW** | **Edge Robotics Core** | Zero-Memory Embedded C/C++11 System-1 Reflex Kernel (`WerrCoreEdge.h` v0.5.1) | [**`10.5281/zenodo.22867425`**](https://doi.org/10.5281/zenodo.22867425) | [`10.5281/zenodo.22939253`](https://doi.org/10.5281/zenodo.22939253) | ATmega328P / ESP32 / STM32 (`0 Bytes Heap`, `<128B Stack`, `TR 2026/016633`) | [`pCwOrM/WERRobotics`](https://github.com/pCwOrM/WERRobotics) |
-
 
 ---
 
@@ -288,9 +218,11 @@ All monographs, formal Lean 4 specifications, and empirical datasets across the 
   * **Active Research Proposals:** Flashbots MEV Research ([`FRP #205`](https://github.com/flashbots/mev-research/pull/205) & [`PR #206`](https://github.com/flashbots/mev-research/pull/206)), Morpho DAO (`MIP-81` OEV Observatory), Uniswap v4 / Unichain Hook Grants.
 
 
+
+
 ---
 
-## 📜 License & Citations
+## ## 📜 License & Citations
 
 Licensed under the **MIT License**. Created by **Volkan Dağlı ([@pCwOrM](https://github.com/pCwOrM))**.  
 Part of the open-source **Fractal Neural Synthesis (FNS)** and **WERR Canonical Research Corpus**.

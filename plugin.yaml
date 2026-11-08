@@ -1,22 +1,45 @@
 name: fractal-memory-engine
-version: "1.0.0"
+version: "1.0.1"
 description: >-
-  Hierarchical zero-storage episodic memory, procedural attractor clustering,
-  and O(1) coordinate anchoring for Hermes Agent. Eliminates vector database bloat
-  and context dilution via 3-ring orbital resonance decay.
-maintainer: pCwOrM
-tier: community
-category: memory
+  Hierarchical vectorless episodic memory, procedural attractor clustering,
+  and O(1) complex coordinate anchoring for Hermes Agent. Eliminates external
+  vector database and embedding model overhead via 3-ring orbital resonance
+  decay and local JSON state persistence under HERMES_HOME/plugin-data.
+author: "Volkan Dagli (pCwOrM)"
+license: "MIT"
+homepage: "https://github.com/pCwOrM/hermes-fractal-memory"
 requires_hermes: ">=0.21.0"
-platforms: []
-capabilities:
-  provides_tools:
-    - fractal_remember
-    - fractal_recall
-    - fractal_consolidate
-    - fractal_memory_inspect
-    - fractal_memory_wipe
-  provides_hooks:
-    - pre_agent_step
-    - post_agent_step
+tags:
+  - memory
+  - fractal
+  - episodic-memory
+  - context-injection
+provides_tools:
+  - fractal_remember
+  - fractal_recall
+  - fractal_consolidate
+  - fractal_memory_inspect
+  - fractal_memory_wipe
+provides_hooks:
+  - pre_llm_call
+  - post_llm_call
 requires_env: []
+config_schema:
+  storage_path:
+    type: str
+    default: ""
+    label: "Custom Storage Path"
+    description: "Optional custom file path for fractal_memory.json. Defaults to <HERMES_HOME>/plugin-data/fractal-memory-engine/fractal_memory.json."
+    required: false
+  auto_inject_context:
+    type: bool
+    default: true
+    label: "Auto-Inject Recalled Memories"
+    description: "Automatically inject top resonant memories into pre_llm_call turn context."
+    required: false
+  min_recall_resonance:
+    type: float
+    default: 0.30
+    label: "Minimum Recall Resonance"
+    description: "Minimum composite resonance score (0.0 to 1.0) required for automatic pre_llm_call memory injection."
+    required: false
