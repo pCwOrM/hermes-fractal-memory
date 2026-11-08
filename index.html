@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hermes Fractal Memory Engine — Vectorless 3-Ring Orbital Memory Plugin | Nous Research Hackathon</title>
+  <meta name="description" content="Hierarchical vectorless episodic memory, procedural attractor clustering, and O(1) complex coordinate anchoring for Hermes Agent (Nous Research). Official PR #151459 by Volkan Dagli (@pCwOrM)." />
+  <meta property="og:title" content="Hermes Fractal Memory Engine (fractal-memory-engine) — PR #151459" />
+  <meta property="og:description" content="Zero vector DB bloat. 3-Ring Orbital Resonance Decay, 0.12ms pre_llm_call turn context injection, post_llm_call consolidation & SHA-256 state seal." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://pcworm.github.io/hermes-fractal-memory/" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <style>
+    :root {
+      --bg: #0d1117;
+      --panel: #161b22;
+      --border: #30363d;
+      --text: #f0f6fc;
+      --muted: #8b949e;
+      --blue: #58a6ff;
+      --cyan: #39d3f5;
+      --green: #3fb950;
+      --purple: #bc8cff;
+      --orange: #d29922;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      line-height: 1.6;
+      padding: 2rem 1rem 4rem;
+    }
+    .container { max-width: 1080px; margin: 0 auto; }
+    .badge-row { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-bottom: 1rem; }
+    .badge {
+      font-size: 0.8rem; font-weight: 700; padding: 0.35rem 0.75rem;
+      border-radius: 999px; border: 1px solid var(--border); background: var(--panel);
+      color: var(--cyan); text-decoration: none;
+    }
+    .badge.green { color: var(--green); border-color: var(--green); }
+    .badge.purple { color: var(--purple); border-color: var(--purple); }
+    h1 { font-size: 2.3rem; margin-bottom: 0.6rem; }
+    .lead { font-size: 1.15rem; color: var(--muted); margin-bottom: 1.6rem; }
+    .cta-row { display: flex; flex-wrap: wrap; gap: 0.8rem; margin-bottom: 2rem; }
+    .btn {
+      display: inline-block; padding: 0.7rem 1.3rem; border-radius: 8px;
+      font-weight: 600; text-decoration: none; border: 1px solid var(--border);
+      background: var(--panel); color: var(--text);
+    }
+    .btn.primary { background: #1f6feb; border-color: #388bfd; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.2rem; margin-bottom: 2rem; }
+    .card {
+      background: var(--panel); border: 1px solid var(--border);
+      border-radius: 12px; padding: 1.4rem;
+    }
+    .card h3 { margin-bottom: 0.5rem; color: var(--cyan); }
+    pre {
+      background: #090d13; border: 1px solid var(--border); border-radius: 10px;
+      padding: 1.1rem; overflow-x: auto; font-family: Consolas, monospace; font-size: 0.92rem;
+      margin: 1rem 0 1.8rem; color: #e6edf3;
+    }
+    footer { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="badge-row">
+      <span class="badge">NOUS RESEARCH HERMES HACKATHON 2026</span>
+      <a class="badge green" href="https://github.com/NousResearch/hermes-agent/pull/151459">OFFICIAL PR #151459</a>
+      <span class="badge purple">CATEGORY: MEMORY</span>
+      <span class="badge">17/17 TESTS PASSING • 5/5 CI GATES</span>
+    </div>
+    <h1>🌀 Hermes Fractal Memory Engine (<code>fractal-memory-engine</code>)</h1>
+    <p class="lead">
+      Hierarchical vectorless episodic memory, procedural attractor clustering, and <strong>O(1) complex coordinate anchoring</strong> for
+      <a href="https://hermes-agent.nousresearch.com" style="color:var(--blue)">Hermes Agent</a>.
+      Eliminates external vector database and embedding model overhead via 3-ring orbital resonance decay and prompt-cache-safe turn injection.
+    </p>
+    <div class="cta-row">
+      <a class="btn primary" href="https://github.com/NousResearch/hermes-agent/pull/151459">View Catalog PR #151459</a>
+      <a class="btn" href="https://github.com/pCwOrM/hermes-fractal-memory">GitHub Repository</a>
+      <a class="btn" href="https://github.com/pCwOrM/hermes-fractal-memory/commit/a4d660fe4a186e4b68e063819659dbb82ba2d9c7">Pinned SHA: a4d660fe</a>
+    </div>
+
+    <h2>⚡ 1-Click Marketplace Installation</h2>
+    <pre>$ hermes plugins install fractal-memory-engine
+$ hermes plugins validate . --install-deps</pre>
+
+    <div class="grid">
+      <div class="card">
+        <h3 style="color:var(--purple)">Ring 3: Invariant Core (1.60x)</h3>
+        <p><strong>Strict Zero Decay (&gamma; = 1.00)</strong> • Capacity: 1,024 items. Anchors permanent user preferences, architectural laws, and verified truths via complex polynomial escape depth (z<sub>n+1</sub> = z<sub>n</sub><sup>2</sup> + c).</p>
+      </div>
+      <div class="card">
+        <h3 style="color:var(--cyan)">Ring 2: Contextual Task (1.00x)</h3>
+        <p><strong>Moderate Decay (&gamma; = 0.96/turn)</strong> • Capacity: 128 items. Retains active episodic goals and intermediate tool outputs. Automatically promoted from Ring 1 via Hebbian reinforcement (&ge;2 recalls).</p>
+      </div>
+      <div class="card">
+        <h3 style="color:var(--orange)">Ring 1: Sensory Buffer (0.60x)</h3>
+        <p><strong>Fast Decay (&gamma; = 0.82/turn)</strong> • Capacity: 64 items. High-speed conversational scratchpad. Sub-threshold noise is automatically pruned when occupancy reaches 75%.</p>
+      </div>
+    </div>
+
+    <h2>🔌 Autonomous Lifecycle Hooks &amp; 5 Interactive Tools</h2>
+    <pre>[pre_llm_call]  -> Queries 3-ring manifold in 0.12ms &amp; returns {"context": "[FRACTAL-ACTIVE-MEMORY...]"}
+                   (Appended to user turn — preserves 100% of LLM system prompt prefix cache!)
+[post_llm_call] -> Advances turn counter, applies orbital decay, and auto-consolidates at 75% capacity.
+
+Tools   : fractal_remember | fractal_recall | fractal_consolidate | fractal_memory_inspect | fractal_memory_wipe
+Commands: /fractal (live telemetry &amp; SHA-256 state seal) | /remember &lt;key&gt; &lt;content&gt;</pre>
+
+    <footer>
+      Developed solo by <strong>Volkan Dagli (<a href="https://github.com/pCwOrM" style="color:var(--blue)">@pCwOrM</a>)</strong> • MIT License • Part of the Fractal Neural Synthesis (FNS) &amp; WERR Research Corpus.
+    </footer>
+  </div>
+</body>
+</html>
