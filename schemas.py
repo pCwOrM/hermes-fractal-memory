@@ -1,6 +1,5 @@
 """
 JSON Schemas for Hermes Fractal Memory Engine tools.
-Compliant with Nous Research Hermes Plugin v2 specifications.
 """
 
 from __future__ import annotations

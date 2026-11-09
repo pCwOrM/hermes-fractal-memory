@@ -9,7 +9,9 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import os
 import re
+import tempfile
 import threading
 import time
 from dataclasses import asdict, dataclass, field
@@ -17,25 +19,42 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 
+def _current_hermes_home() -> Optional[Path]:
+    """Return the active profile's HERMES_HOME via `hermes_constants.get_hermes_home()`, if available."""
+    try:
+        from hermes_constants import get_hermes_home  # type: ignore
+
+        return Path(get_hermes_home()).resolve()
+    except Exception:
+        return None
+
+
 def _resolve_default_storage_path() -> Path:
     """
-    Resolve the sanctioned Hermes per-plugin data directory:
+    Resolve the active profile's per-plugin data file on every call:
     `<HERMES_HOME>/plugin-data/fractal-memory-engine/fractal_memory.json`.
-    Uses the public `plugins.plugin_storage.plugin_data_dir` helper when running
-    inside Hermes Agent, with a safe home-directory fallback for standalone tests.
+    Uses `plugins.plugin_storage.plugin_data_dir` or `hermes_constants.get_hermes_home()`,
+    and fails closed if neither is available.
     """
     try:
         from plugins.plugin_storage import plugin_data_dir  # type: ignore
 
-        return plugin_data_dir("fractal-memory-engine") / "fractal_memory.json"
-    except Exception:
-        return (
-            Path.home()
-            / ".hermes"
-            / "plugin-data"
-            / "fractal-memory-engine"
-            / "fractal_memory.json"
-        )
+        return Path(plugin_data_dir("fractal-memory-engine")) / "fractal_memory.json"
+    except ImportError:
+        pass
+
+    try:
+        from hermes_constants import get_hermes_home  # type: ignore
+
+        root = Path(get_hermes_home()) / "plugin-data" / "fractal-memory-engine"
+        root.mkdir(parents=True, exist_ok=True)
+        return root / "fractal_memory.json"
+    except ImportError as exc:
+        raise RuntimeError(
+            "Hermes runtime environment not available: cannot resolve profile-scoped "
+            "storage path without plugins.plugin_storage.plugin_data_dir or "
+            "hermes_constants.get_hermes_home unless an explicit storage_path is configured."
+        ) from exc
 
 
 @dataclass
@@ -136,9 +155,9 @@ class FractalMemoryEngine:
     def __init__(self, storage_path: Optional[Path | str] = None):
         self._lock = threading.RLock()
         self.storage_path = (
-            Path(storage_path)
+            Path(storage_path).resolve()
             if storage_path and str(storage_path).strip()
-            else _resolve_default_storage_path()
+            else _resolve_default_storage_path().resolve()
         )
         self.auto_inject_context: bool = True
         self.min_recall_resonance: float = 0.30
@@ -156,10 +175,10 @@ class FractalMemoryEngine:
         auto_inject_context: Optional[bool] = None,
         min_recall_resonance: Optional[float] = None,
     ) -> None:
-        """Update runtime configuration from Hermes PluginContext."""
+        """Update runtime configuration for this engine instance."""
         with self._lock:
             if storage_path is not None and str(storage_path).strip():
-                new_path = Path(str(storage_path).strip())
+                new_path = Path(str(storage_path).strip()).resolve()
                 if new_path != self.storage_path:
                     self.storage_path = new_path
                     self.rings = {"sensory": {}, "task": {}, "invariant": {}}
@@ -498,7 +517,7 @@ class FractalMemoryEngine:
             }
 
     # -------------------------------------------------------------------------
-    # Cryptographic State Seal & Utility
+    # Cryptographic State Seal & Atomic Persistence
     # -------------------------------------------------------------------------
 
     def compute_state_seal(self) -> str:
@@ -527,47 +546,126 @@ class FractalMemoryEngine:
         return {clean[i : i + 3] for i in range(len(clean) - 2)}
 
     def _save_to_disk(self) -> None:
+        """
+        Atomically persist the manifold state by writing to a sibling temporary
+        file in the same directory and replacing the target store via `os.replace`.
+        """
+        self.storage_path.parent.mkdir(parents=True, exist_ok=True)
+        data = {
+            "version": "1.0.2",
+            "turn_counter": self.turn_counter,
+            "rings": {
+                r_name: [item.to_dict() for item in items.values()]
+                for r_name, items in self.rings.items()
+            },
+        }
+        fd, tmp_name = tempfile.mkstemp(
+            prefix=f".{self.storage_path.name}.",
+            suffix=".tmp",
+            dir=str(self.storage_path.parent),
+        )
+        tmp_path = Path(tmp_name)
         try:
-            self.storage_path.parent.mkdir(parents=True, exist_ok=True)
-            data = {
-                "version": "1.0.1",
-                "turn_counter": self.turn_counter,
-                "rings": {
-                    r_name: [item.to_dict() for item in items.values()]
-                    for r_name, items in self.rings.items()
-                },
-            }
-            with open(self.storage_path, "w", encoding="utf-8") as f:
+            with os.fdopen(fd, "w", encoding="utf-8") as f:
                 json.dump(data, f, ensure_ascii=False, indent=2)
-        except Exception:
-            # Fail-safe in read-only or ephemeral sandbox environments
-            pass
+                f.flush()
+                os.fsync(f.fileno())
+            os.replace(tmp_path, self.storage_path)
+        except BaseException:
+            try:
+                tmp_path.unlink(missing_ok=True)
+            except OSError:
+                pass
+            raise
 
     def _load_from_disk(self) -> None:
         if not self.storage_path.exists():
             return
-        try:
-            with open(self.storage_path, "r", encoding="utf-8") as f:
-                data = json.load(f)
-            self.turn_counter = int(data.get("turn_counter", 0))
-            raw_rings = data.get("rings", {})
-            for r_name in ["sensory", "task", "invariant"]:
-                self.rings[r_name] = {}
-                for item_dict in raw_rings.get(r_name, []):
-                    item = MemoryItem.from_dict(item_dict)
-                    self.rings[r_name][item.key] = item
-        except Exception:
-            pass
+        raw = self.storage_path.read_text(encoding="utf-8").strip()
+        if not raw:
+            return
+        data = json.loads(raw)
+        self.turn_counter = int(data.get("turn_counter", 0))
+        raw_rings = data.get("rings", {})
+        for r_name in ["sensory", "task", "invariant"]:
+            self.rings[r_name] = {}
+            for item_dict in raw_rings.get(r_name, []):
+                item = MemoryItem.from_dict(item_dict)
+                self.rings[r_name][item.key] = item
 
 
 _ENGINE_LOCK = threading.RLock()
-_DEFAULT_ENGINE: Optional[FractalMemoryEngine] = None
+_ENGINES: Dict[Path, FractalMemoryEngine] = {}
+_PROFILE_CONFIGS: Dict[Optional[Path], Dict[str, Any]] = {}
+_DEFAULT_CONFIG: Dict[str, Any] = {
+    "storage_path": None,
+    "auto_inject_context": True,
+    "min_recall_resonance": 0.30,
+}
+
+
+def configure_runtime(
+    storage_path: Optional[Path | str] = None,
+    auto_inject_context: Optional[bool] = None,
+    min_recall_resonance: Optional[float] = None,
+) -> None:
+    """
+    Record plugin configuration from `register(ctx)` without eagerly pinning a single
+    profile's file path. Settings are scoped to the active `get_hermes_home()` when
+    available and applied to matching profile engines.
+    """
+    with _ENGINE_LOCK:
+        clean_path = (
+            Path(str(storage_path).strip()).resolve()
+            if storage_path is not None and str(storage_path).strip()
+            else None
+        )
+        home_key = _current_hermes_home()
+        cfg = dict(_PROFILE_CONFIGS.get(home_key, _DEFAULT_CONFIG))
+        cfg["storage_path"] = clean_path
+        if auto_inject_context is not None:
+            cfg["auto_inject_context"] = bool(auto_inject_context)
+        if min_recall_resonance is not None:
+            try:
+                cfg["min_recall_resonance"] = max(
+                    0.0, min(1.0, float(min_recall_resonance))
+                )
+            except (TypeError, ValueError):
+                pass
+        _PROFILE_CONFIGS[home_key] = cfg
+        if home_key is None:
+            _DEFAULT_CONFIG.update(cfg)
+
+        # Apply updated flags to any already-instantiated engine for this profile
+        for eng in _ENGINES.values():
+            eng.configure(
+                auto_inject_context=cfg["auto_inject_context"],
+                min_recall_resonance=cfg["min_recall_resonance"],
+            )
 
 
 def get_memory_engine(storage_path: Optional[Path | str] = None) -> FractalMemoryEngine:
-    """Thread-safe singleton accessor for the FractalMemoryEngine."""
-    global _DEFAULT_ENGINE
+    """
+    Resolve the active profile's storage path on every call (`plugin_data_dir("fractal-memory-engine")`
+    or `get_hermes_home()`) and return the profile-scoped `FractalMemoryEngine` instance.
+    """
     with _ENGINE_LOCK:
-        if _DEFAULT_ENGINE is None or storage_path is not None:
-            _DEFAULT_ENGINE = FractalMemoryEngine(storage_path)
-        return _DEFAULT_ENGINE
+        home_key = _current_hermes_home()
+        cfg = _PROFILE_CONFIGS.get(home_key, _DEFAULT_CONFIG)
+
+        if storage_path is not None and str(storage_path).strip():
+            target_path = Path(str(storage_path).strip()).resolve()
+        elif cfg.get("storage_path") is not None:
+            target_path = Path(cfg["storage_path"]).resolve()
+        else:
+            target_path = _resolve_default_storage_path().resolve()
+
+        engine = _ENGINES.get(target_path)
+        if engine is None:
+            engine = FractalMemoryEngine(storage_path=target_path)
+            engine.configure(
+                auto_inject_context=cfg.get("auto_inject_context", True),
+                min_recall_resonance=cfg.get("min_recall_resonance", 0.30),
+            )
+            _ENGINES[target_path] = engine
+        return engine

@@ -1,5 +1,5 @@
 name: fractal-memory-engine
-version: "1.0.1"
+version: "1.0.2"
 description: >-
   Hierarchical vectorless episodic memory, procedural attractor clustering,
   and O(1) complex coordinate anchoring for Hermes Agent. Eliminates external

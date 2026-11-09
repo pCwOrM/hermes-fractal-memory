@@ -105,8 +105,9 @@ def test_register_context_wiring_and_schemas() -> None:
     assert set(ctx.hooks.keys()) == set(manifest["provides_hooks"])
     assert set(ctx.tools.keys()) == set(manifest["provides_tools"])
 
-    # Verify each tool schema carries name, description, parameters
+    # Verify each tool schema carries name, description, parameters and uses dedicated toolset
     for tool_name, entry in ctx.tools.items():
+        assert entry["toolset"] == "fractal_memory"
         schema = entry["schema"]
         assert schema["name"] == tool_name
         assert isinstance(schema.get("description"), str) and len(schema["description"]) > 10

@@ -23,7 +23,11 @@ class MockTurnContext:
 def setup_module() -> None:
     tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".json")
     tmp.close()
-    memory_core._DEFAULT_ENGINE = memory_core.FractalMemoryEngine(storage_path=tmp.name)
+    memory_core.configure_runtime(
+        storage_path=tmp.name,
+        auto_inject_context=True,
+        min_recall_resonance=0.30,
+    )
 
 
 def test_pre_llm_call_keyword_injection() -> None:

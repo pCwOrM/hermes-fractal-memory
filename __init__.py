@@ -1,6 +1,6 @@
 """
 Hermes Fractal Memory Engine: Vectorless Episodic Memory and Attractor Manifold.
-Official Plugin for Hermes Agent (Nous Research Plugin v2 Specification).
+Community plugin for Hermes Agent providing a 3-ring orbital memory store.
 """
 
 from __future__ import annotations
@@ -10,14 +10,14 @@ from typing import Any
 
 try:
     from . import hooks, schemas, tools
-    from .memory_core import get_memory_engine
+    from .memory_core import configure_runtime
 except (ImportError, ValueError):
     import hooks  # type: ignore
     import schemas  # type: ignore
     import tools  # type: ignore
-    from memory_core import get_memory_engine  # type: ignore
+    from memory_core import configure_runtime  # type: ignore
 
-__version__ = "1.0.1"
+__version__ = "1.0.2"
 __author__ = "Volkan Dagli"
 
 logger = logging.getLogger(__name__)
@@ -51,8 +51,7 @@ def register(ctx: Any) -> None:
     auto_inject = _read_config(ctx, "auto_inject_context", True)
     min_resonance = _read_config(ctx, "min_recall_resonance", 0.30)
 
-    engine = get_memory_engine()
-    engine.configure(
+    configure_runtime(
         storage_path=storage_path if storage_path else None,
         auto_inject_context=bool(auto_inject),
         min_recall_resonance=float(min_resonance),
@@ -63,35 +62,35 @@ def register(ctx: Any) -> None:
         ctx.register_hook("pre_llm_call", hooks.pre_llm_call_hook)
         ctx.register_hook("post_llm_call", hooks.post_llm_call_hook)
 
-    # 2. Register Interactive Fractal Memory Tools
+    # 2. Register Interactive Fractal Memory Tools under dedicated `fractal_memory` toolset
     if hasattr(ctx, "register_tool"):
         ctx.register_tool(
             name="fractal_remember",
-            toolset="memory",
+            toolset="fractal_memory",
             schema=schemas.FRACTAL_REMEMBER_SCHEMA,
             handler=tools.fractal_remember_handler,
         )
         ctx.register_tool(
             name="fractal_recall",
-            toolset="memory",
+            toolset="fractal_memory",
             schema=schemas.FRACTAL_RECALL_SCHEMA,
             handler=tools.fractal_recall_handler,
         )
         ctx.register_tool(
             name="fractal_consolidate",
-            toolset="memory",
+            toolset="fractal_memory",
             schema=schemas.FRACTAL_CONSOLIDATE_SCHEMA,
             handler=tools.fractal_consolidate_handler,
         )
         ctx.register_tool(
             name="fractal_memory_inspect",
-            toolset="memory",
+            toolset="fractal_memory",
             schema=schemas.FRACTAL_MEMORY_INSPECT_SCHEMA,
             handler=tools.fractal_memory_inspect_handler,
         )
         ctx.register_tool(
             name="fractal_memory_wipe",
-            toolset="memory",
+            toolset="fractal_memory",
             schema=schemas.FRACTAL_MEMORY_WIPE_SCHEMA,
             handler=tools.fractal_memory_wipe_handler,
         )
@@ -113,4 +112,4 @@ def register(ctx: Any) -> None:
             ctx.register_command("fractal", tools.memory_cli_status)
             ctx.register_command("remember", tools.remember_cli_quick)
 
-    logger.info("Fractal Memory Engine v1.0.1 registered with Hermes Agent.")
+    logger.info("Fractal Memory Engine v1.0.2 registered with Hermes Agent.")

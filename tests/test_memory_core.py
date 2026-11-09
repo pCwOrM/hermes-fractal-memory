@@ -1,15 +1,24 @@
 """Unit tests for Fractal Memory Core Engine."""
 
+from __future__ import annotations
+
+import json
 import os
 import sys
 import tempfile
+import types
 from pathlib import Path
+from unittest.mock import patch
+
+import pytest
 
 PLUGIN_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if PLUGIN_DIR not in sys.path:
     sys.path.insert(0, PLUGIN_DIR)
 
-from memory_core import FractalCoordinateProjector, FractalMemoryEngine
+import hooks  # noqa: E402
+import memory_core  # noqa: E402
+from memory_core import FractalCoordinateProjector, FractalMemoryEngine  # noqa: E402
 
 
 def test_coordinate_projection_bounds():
@@ -109,3 +118,114 @@ def test_cryptographic_state_seal():
         engine.remember(key="k1", content="Val 1", ring="invariant")
         seal2 = engine.compute_state_seal()
         assert seal1 != seal2
+
+
+def test_multi_profile_isolation_and_hook_separation():
+    """
+    Verify that when one Hermes process serves multiple profiles (switching
+    `hermes_constants.get_hermes_home()`), each profile gets its own isolated
+    store and `pre_llm_call` never injects Profile A's memories into Profile B's turns.
+    """
+    with tempfile.TemporaryDirectory() as tmpdir:
+        profile_a_home = Path(tmpdir) / "profile_a"
+        profile_b_home = Path(tmpdir) / "profile_b"
+        active_home = {"path": profile_a_home}
+
+        fake_hermes_constants = types.ModuleType("hermes_constants")
+        fake_hermes_constants.get_hermes_home = lambda: active_home["path"]  # type: ignore[attr-defined]
+
+        # Clear any test-level storage_path overrides so dynamic profile resolution runs
+        saved_configs = dict(memory_core._PROFILE_CONFIGS)
+        saved_default = dict(memory_core._DEFAULT_CONFIG)
+        try:
+            memory_core._PROFILE_CONFIGS.clear()
+            memory_core._DEFAULT_CONFIG["storage_path"] = None
+
+            with patch.dict(sys.modules, {"hermes_constants": fake_hermes_constants}):
+                # 1. Profile A stores a secret invariant
+                active_home["path"] = profile_a_home
+                eng_a = memory_core.get_memory_engine()
+                eng_a.remember(
+                    key="profile_a_secret",
+                    content="Profile A exclusive deployment key is ALPHA-9999",
+                    ring="invariant",
+                    salience=0.95,
+                )
+                assert eng_a.storage_path == (
+                    profile_a_home / "plugin-data" / "fractal-memory-engine" / "fractal_memory.json"
+                ).resolve()
+
+                # 2. Switch active profile to Profile B in the same process
+                active_home["path"] = profile_b_home
+                eng_b = memory_core.get_memory_engine()
+                assert eng_b is not eng_a
+                assert eng_b.storage_path == (
+                    profile_b_home / "plugin-data" / "fractal-memory-engine" / "fractal_memory.json"
+                ).resolve()
+
+                # Profile B's pre_llm_call must NOT inject Profile A's memory
+                hook_res_b = hooks.pre_llm_call_hook(
+                    user_message="What is the Profile A exclusive deployment key ALPHA-9999?"
+                )
+                assert hook_res_b is None
+
+                # Profile A's pre_llm_call still recalls Profile A's memory
+                active_home["path"] = profile_a_home
+                hook_res_a = hooks.pre_llm_call_hook(
+                    user_message="What is the Profile A exclusive deployment key ALPHA-9999?"
+                )
+                assert hook_res_a is not None
+                assert "ALPHA-9999" in hook_res_a["context"]
+        finally:
+            memory_core._PROFILE_CONFIGS.clear()
+            memory_core._PROFILE_CONFIGS.update(saved_configs)
+            memory_core._DEFAULT_CONFIG.update(saved_default)
+
+
+def test_fail_closed_without_hermes_home_or_plugin_storage():
+    """
+    Verify that `_resolve_default_storage_path()` fails closed (raises RuntimeError)
+    instead of falling back to a hardcoded `~/.hermes/plugin-data/...` path when neither
+    `plugins.plugin_storage` nor `hermes_constants` is available.
+    """
+    with patch.dict(
+        sys.modules,
+        {"plugins": None, "plugins.plugin_storage": None, "hermes_constants": None},
+    ):
+        with pytest.raises(RuntimeError, match="cannot resolve profile-scoped storage path"):
+            memory_core._resolve_default_storage_path()
+
+
+def test_atomic_save_crash_preserves_existing_store():
+    """
+    Verify that `_save_to_disk` writes to a sibling temporary file and uses `os.replace`,
+    so a crash mid-write never truncates or empties the existing store on disk.
+    """
+    with tempfile.TemporaryDirectory() as tmpdir:
+        storage = Path(tmpdir) / "atomic_test.json"
+        engine = FractalMemoryEngine(storage_path=storage)
+        engine.remember(
+            key="persistent_rule",
+            content="Never truncate the store before write completes",
+            ring="invariant",
+            salience=0.95,
+        )
+
+        original_bytes = storage.read_text(encoding="utf-8")
+        original_parsed = json.loads(original_bytes)
+        assert len(original_parsed["rings"]["invariant"]) == 1
+
+        # Simulate a crash mid-write inside json.dump
+        with patch("memory_core.json.dump", side_effect=OSError("disk full mid-write")):
+            with pytest.raises(OSError, match="disk full mid-write"):
+                engine.remember(
+                    key="second_item",
+                    content="This write crashes halfway through",
+                    ring="task",
+                )
+
+        # Existing file on disk must be 100% intact (not truncated!) and no leftover .tmp files
+        after_bytes = storage.read_text(encoding="utf-8")
+        assert after_bytes == original_bytes
+        leftover_tmps = list(Path(tmpdir).glob("*.tmp"))
+        assert leftover_tmps == []

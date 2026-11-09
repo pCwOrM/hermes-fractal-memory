@@ -2,13 +2,13 @@
 
 > **Hierarchical Vectorless Episodic Memory, Procedural Attractor Clustering, and $O(1)$ Complex Coordinate Anchoring for [Hermes Agent](https://hermes-agent.nousresearch.com) (Nous Research).**
 
-[![Hermes Agent Plugin v2](https://img.shields.io/badge/Hermes%20Plugin-v2%20Compliant-blue.svg)](https://hermes-agent.nousresearch.com)
+[![Hermes Agent Plugin](https://img.shields.io/badge/Hermes%20Plugin-Community-blue.svg)](https://hermes-agent.nousresearch.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Tests: 18 Passed](https://img.shields.io/badge/Tests-18%2F18%20Passed-brightgreen.svg)](#testing)
+[![Tests: 20 Passed](https://img.shields.io/badge/Tests-20%2F20%20Passed-brightgreen.svg)](#testing)
 [![Category: Memory](https://img.shields.io/badge/Category-Memory%20Layer-purple.svg)](plugin.yaml)
 [![Hackathon: Nous Research](https://img.shields.io/badge/Nous%20Research-Plugin%20Hackathon%202026-orange.svg)](https://x.com/NousResearch)
 
-> **Official Submission for The Hermes Agent Plugin Hackathon by Nous Research (Nov 2026)**  
+> **Community Plugin Submission for The Hermes Agent Plugin Hackathon by Nous Research (Nov 2026)**  
 > *Developed solo by [@pCwOrM](https://github.com/pCwOrM) / Volkan Dagli.*
 
 ---
@@ -16,7 +16,7 @@
 ## 🔒 Disclosure & Operational Scope
 
 **Disclosure —** `fractal-memory-engine` runs **100% locally** inside the Hermes Agent Python process with **zero external network calls**, **zero third-party API keys**, and **zero background processes or shell execution**:
-- **Local State Persistence:** Memory items and turn counters are persisted as UTF-8 JSON inside the sanctioned Hermes per-plugin data directory (`<HERMES_HOME>/plugin-data/fractal-memory-engine/fractal_memory.json` via `plugins.plugin_storage.plugin_data_dir`), or at a user-configured `storage_path`.
+- **Profile-Isolated Atomic Persistence:** Memory items and turn counters are persisted per-profile as UTF-8 JSON inside the sanctioned Hermes per-plugin data directory (`<HERMES_HOME>/plugin-data/fractal-memory-engine/fractal_memory.json` resolved dynamically per call via `plugins.plugin_storage.plugin_data_dir("fractal-memory-engine")` / `hermes_constants.get_hermes_home()`), or at a user-configured `storage_path`, using atomic temp-file writes (`os.replace`) so mid-write crashes never corrupt or truncate the store.
 - **Turn Context Injection (`pre_llm_call`):** Before each LLM turn, `pre_llm_call` queries the local 3-ring memory manifold against the active user prompt and returns a compact `<150 token` context block (`{"context": "[FRACTAL-ACTIVE-MEMORY...]"}`) when resonant memories exceed `min_recall_resonance` (default `0.30`). Can be toggled via `auto_inject_context`.
 - **Orbital Decay (`post_llm_call`):** After each completed turn, `post_llm_call` applies exponential half-life decay to Ring 1 (Sensory, $\times 0.82$) and Ring 2 (Task, $\times 0.96$) while keeping Ring 3 (Invariant Core, $\times 1.00$) permanent, and triggers automatic consolidation when Sensory buffer occupancy reaches 75%.
 
@@ -78,7 +78,7 @@ The **Hermes Fractal Memory Engine** (`fractal-memory-engine`) solves this deter
 
 ---
 
-## 🛠️ Provided Tools (`toolset="memory"`)
+## 🛠️ Provided Tools (`toolset="fractal_memory"`)
 
 All 5 tool handlers accept `(args: dict, **kwargs)` and return a structured JSON string:
 
