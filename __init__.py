@@ -17,7 +17,7 @@ except (ImportError, ValueError):
     import tools  # type: ignore
     from memory_core import configure_runtime  # type: ignore
 
-__version__ = "1.0.2"
+__version__ = "1.0.3"
 __author__ = "Volkan Dagli"
 
 logger = logging.getLogger(__name__)
@@ -112,4 +112,4 @@ def register(ctx: Any) -> None:
             ctx.register_command("fractal", tools.memory_cli_status)
             ctx.register_command("remember", tools.remember_cli_quick)
 
-    logger.info("Fractal Memory Engine v1.0.2 registered with Hermes Agent.")
+    logger.info("Fractal Memory Engine v1.0.3 registered with Hermes Agent.")

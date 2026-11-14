@@ -1,6 +1,6 @@
 [project]
 name = "hermes-fractal-memory"
-version = "1.0.2"
+version = "1.0.3"
 description = "Hierarchical vectorless episodic memory, procedural attractor clustering, and O(1) coordinate anchoring for Hermes Agent."
 readme = "README.md"
 authors = [{ name = "Volkan Dagli", email = "ask@answerr.me" }]

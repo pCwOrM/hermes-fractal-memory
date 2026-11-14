@@ -552,7 +552,7 @@ class FractalMemoryEngine:
         """
         self.storage_path.parent.mkdir(parents=True, exist_ok=True)
         data = {
-            "version": "1.0.2",
+            "version": "1.0.3",
             "turn_counter": self.turn_counter,
             "rings": {
                 r_name: [item.to_dict() for item in items.values()]
