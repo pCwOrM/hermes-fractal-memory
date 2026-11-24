@@ -11,6 +11,36 @@
 > **Community Plugin Submission for The Hermes Agent Plugin Hackathon by Nous Research (Nov 2026)**  
 > *Developed solo by [@pCwOrM](https://github.com/pCwOrM) / Volkan Dagli.*
 
+<p align="center">
+  <img src="assets/demo.gif" alt="Hermes Fractal Memory Live Demo" width="820" />
+</p>
+
+## ⚡ 30-Second Quick Start
+
+```bash
+git clone https://github.com/pCwOrM/hermes-fractal-memory.git && cd hermes-fractal-memory
+python -c "
+import memory_core, tools
+memory_core.configure_runtime(storage_path='fractal_memory.json')
+print(tools.fractal_remember_handler({'key': 'lean4-ci-rule', 'content': 'Always verify Lean 4 patches with leanprover/lean4:v4.36.0 before push', 'tags': ['lean4', 'ci']}))
+print(tools.fractal_recall_handler({'query': 'lean4-ci-rule patches', 'min_resonance': 0.05}))
+"
+```
+
+**Observed Output:**
+```json
+{
+  "status": "stored",
+  "key": "lean4-ci-rule",
+  "ring": "task",
+  "salience": 0.75,
+  "cx": -1.747756,
+  "cy": 0.553867,
+  "escape_time": 3,
+  "state_seal": "[FRACTAL-MEM-SEAL:d8ac70401ad8747b]"
+}
+```
+
 ---
 
 ## 🔒 Disclosure & Operational Scope
