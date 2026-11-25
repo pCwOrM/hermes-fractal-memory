@@ -1,0 +1,1998 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>hermes-fractal-memory — Complete Call Flow &amp; Architecture Documentation</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<style>
+:root {
+  --bg: #0f172a; --surface: #1e293b; --border: #334155;
+  --text: #e2e8f0; --muted: #94a3b8; --accent: #38bdf8;
+  --warn: #fbbf24; --err: #f87171; --ok: #34d399;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; }
+.container { max-width: 1200px; margin: 0 auto; padding: 40px 24px; }
+h1 { font-size: 2.4rem; margin-bottom: 8px; background: linear-gradient(135deg, var(--accent), #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+h2 { font-size: 1.7rem; margin: 48px 0 16px; padding-bottom: 8px; border-bottom: 2px solid var(--accent); }
+h3 { font-size: 1.25rem; margin: 32px 0 12px; color: var(--accent); }
+h4 { font-size: 1.05rem; margin: 20px 0 8px; color: var(--warn); }
+p { margin: 8px 0; color: var(--muted); }
+.subtitle { color: var(--muted); font-size: 1.1rem; margin-bottom: 32px; }
+.mermaid { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin: 20px 0; overflow-x: auto; position: relative; }
+.mermaid.is-enhanced { padding: 0; overflow: hidden; min-height: 260px; }
+.mermaid-viewport { padding: 54px 24px 24px; overflow: hidden; cursor: grab; touch-action: none; min-height: 260px; }
+.mermaid-viewport.is-dragging { cursor: grabbing; }
+.mermaid-viewport svg { max-width: none !important; height: auto; transform-origin: 0 0; transition: transform 120ms ease; }
+.mermaid-toolbar { position: absolute; top: 10px; right: 10px; z-index: 3; display: flex; align-items: center; gap: 6px; padding: 6px; background: rgba(15,23,42,0.92); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.28); }
+.mermaid-toolbar button, .mermaid-toolbar .zoom-level { height: 28px; min-width: 32px; border: 1px solid var(--border); border-radius: 6px; background: #1e293b; color: var(--text); font: 600 0.78rem system-ui, sans-serif; display: inline-flex; align-items: center; justify-content: center; }
+.mermaid-toolbar button { cursor: pointer; }
+.mermaid-toolbar button:hover { border-color: var(--accent); color: var(--accent); }
+.mermaid-toolbar .zoom-level { min-width: 52px; color: var(--muted); background: transparent; }
+.call-table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.92rem; }
+.call-table th { background: #1a2744; color: var(--accent); text-align: left; padding: 10px 14px; border: 1px solid var(--border); }
+.call-table td { padding: 8px 14px; border: 1px solid var(--border); vertical-align: top; }
+.call-table tr:nth-child(even) { background: rgba(255,255,255,0.02); }
+.tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: 600; }
+.tag-async { background: #7c3aed33; color: #a78bfa; }
+.tag-class { background: #05966933; color: var(--ok); }
+.tag-func { background: #2563eb33; color: var(--accent); }
+.tag-cmd { background: #d9770633; color: var(--warn); }
+.tag-endpoint { background: #dc262633; color: var(--err); }
+.tag-hook { background: #db277733; color: #f472b6; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px; margin: 16px 0; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; margin: 16px 0; }
+.arrow-chain { font-family: 'Fira Code', monospace; font-size: 0.85rem; color: var(--accent); padding: 10px; background: rgba(56,189,248,0.06); border-radius: 6px; }
+code { font-family: 'Fira Code', 'Cascadia Code', monospace; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; font-size: 0.88em; }
+ul, ol { margin: 8px 0 8px 24px; color: var(--muted); }
+li { margin: 4px 0; }
+a { color: var(--accent); }
+hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+.nav { position: sticky; top: 0; background: var(--bg); z-index: 10; padding: 12px 0; border-bottom: 1px solid var(--border); display: flex; gap: 20px; flex-wrap: wrap; font-size: 0.9rem; }
+.nav a { text-decoration: none; }
+.nav a:hover { text-decoration: underline; }
+@media (max-width: 768px) { .container { padding: 16px; } h1 { font-size: 1.8rem; } }
+
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>hermes-fractal-memory — Complete Call Flow &amp; Architecture Documentation</h1>
+<p class="subtitle">Generated from graphify knowledge graph: 256 nodes, 419 edges, 13 communities. Commit: 62a0c83</p>
+
+<div class="nav">
+    <a href="#overview">Architecture Overview</a>
+    <a href="#extract-pipeline">Extraction Pipeline</a>
+    <a href="#analysis-clustering">Analysis &amp; Clustering</a>
+    <a href="#tests-fixtures">Tests &amp; Fixtures</a>
+    <a href="#plugin-yaml">plugin.yaml</a>
+    <a href="#hermes-fractal-memory-engine">🌀 Hermes Fractal Memory Engine</a>
+    <a href="#hermes-catalog-entry-yaml">hermes-catalog-entry.yaml</a>
+    <a href="#hermes-fractal-memory">hermes-fractal-memory</a>
+</div>
+
+<!-- ====== Architecture Overview ====== -->
+<h2 id="overview">1. Architecture Overview</h2>
+
+<div class="mermaid">
+
+%%{init: {"theme": "dark", "themeVariables": {"fontSize": "15.0px", "fontFamily": "Segoe UI, system-ui, sans-serif", "primaryColor": "#1e293b", "primaryTextColor": "#e2e8f0", "primaryBorderColor": "#38bdf8", "secondaryColor": "#0f172a", "tertiaryColor": "#334155", "lineColor": "#64748b", "textColor": "#e2e8f0"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 48, "rankSpacing": 64, "padding": 14, "diagramPadding": 10, "useMaxWidth": true}}}%%
+flowchart LR
+    EXTRACT_PIPELINE_5F350230("Extraction Pipeline<br/><small>21 nodes</small>")
+    class EXTRACT_PIPELINE_5F350230 module;
+    ANALYSIS_CLUSTERING_C79796DA("Analysis &amp; Clustering<br/><small>11 nodes</small>")
+    class ANALYSIS_CLUSTERING_C79796DA module;
+    TESTS_FIXTURES_B84B1DCC("Tests &amp; Fixtures<br/><small>155 nodes</small>")
+    class TESTS_FIXTURES_B84B1DCC module;
+    PLUGIN_YAML_1BF9210A("plugin.yaml<br/><small>31 nodes</small>")
+    class PLUGIN_YAML_1BF9210A module;
+    HERMES_FRACTAL_MEMORY_ENGINE_C935E8D4("🌀 Hermes Fractal Memory Engine<br/><small>19 nodes</small>")
+    class HERMES_FRACTAL_MEMORY_ENGINE_C935E8D4 module;
+    HERMES_CATALOG_ENTRY_YAML_D9467E15("hermes-catalog-entry.yaml<br/><small>18 nodes</small>")
+    class HERMES_CATALOG_ENTRY_YAML_D9467E15 module;
+    HERMES_FRACTAL_MEMORY_C1FEFF4E("hermes-fractal-memory<br/><small>1 nodes</small>")
+    class HERMES_FRACTAL_MEMORY_C1FEFF4E module;
+    TESTS_FIXTURES_B84B1DCC -->|method x11| ANALYSIS_CLUSTERING_C79796DA
+    ANALYSIS_CLUSTERING_C79796DA -->|references x2| TESTS_FIXTURES_B84B1DCC
+    HERMES_FRACTAL_MEMORY_ENGINE_C935E8D4 -->|contains| TESTS_FIXTURES_B84B1DCC
+    classDef entry fill:#422006,stroke:#fbbf24,color:#fde68a,stroke-width:1px;
+    classDef api fill:#450a0a,stroke:#f87171,color:#fee2e2,stroke-width:1px;
+    classDef async fill:#2e1065,stroke:#a78bfa,color:#ede9fe,stroke-width:1px;
+    classDef klass fill:#064e3b,stroke:#34d399,color:#d1fae5,stroke-width:1px;
+    classDef ui fill:#831843,stroke:#f472b6,color:#fce7f3,stroke-width:1px;
+    classDef module fill:#172554,stroke:#60a5fa,color:#dbeafe,stroke-width:1px;
+    classDef test fill:#3f3f46,stroke:#a1a1aa,color:#f4f4f5,stroke-width:1px;
+    classDef concept fill:#292524,stroke:#a8a29e,color:#fafaf9,stroke-dasharray:4 3;
+    classDef function fill:#0f172a,stroke:#38bdf8,color:#e0f2fe,stroke-width:1px;
+</div>
+
+<div class="grid">
+  <div class="card">
+    <h4>Architecture Layers</h4>
+    <table style="width:100%;font-size:0.85rem;">
+      <tr><th>Layer</th><th>Nodes</th><th>Communities</th></tr>
+      <tr><td>Extraction Pipeline</td><td>21</td><td><code>4</code></td></tr><tr><td>Analysis &amp; Clustering</td><td>11</td><td><code>9</code></td></tr><tr><td>Tests &amp; Fixtures</td><td>155</td><td><code>0, 1, 3, 5, 6, 10, 12</code></td></tr><tr><td>plugin.yaml</td><td>31</td><td><code>2</code></td></tr><tr><td>🌀 Hermes Fractal Memory Engine</td><td>19</td><td><code>7</code></td></tr><tr><td>hermes-catalog-entry.yaml</td><td>18</td><td><code>8</code></td></tr><tr><td>hermes-fractal-memory</td><td>1</td><td><code>11</code></td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h4>Core Flow</h4>
+    <div class="arrow-chain">Extraction Pipeline -&gt; Analysis &amp; Clustering -&gt; Tests &amp; Fixtures -&gt; plugin.yaml -&gt; 🌀 Hermes Fractal Memory Engine -&gt; hermes-catalog-entry.yaml -&gt; hermes-fractal-memory</div>
+  </div>
+</div>
+<div class="grid">
+  <div class="card">
+    <h4>Graph Report Highlights</h4>
+    <ul>
+      <li>256 nodes · 419 edges · 13 communities (9 shown, 4 thin omitted)</li>
+      <li>Extraction: 96% EXTRACTED · 4% INFERRED · 0% AMBIGUOUS · INFERRED: 17 edges (avg confidence: 0.87)</li>
+      <li>Token cost: 0 input · 0 output</li>
+      <li>1. `FractalMemoryEngine` - 22 edges</li>
+      <li>2. `get_memory_engine()` - 20 edges</li>
+      <li>3. `🌀 Hermes Fractal Memory Engine` - 12 edges</li>
+    </ul>
+  </div>
+</div>
+<hr>
+<!-- ====== 2. Extraction Pipeline ====== -->
+<h2 id="extract-pipeline">2. Extraction Pipeline</h2>
+<p>Extraction Pipeline groups implementation around ciyml, github, workflows, python, mostly in .github/workflows/ci.yml. This section covers 21 nodes and 20 internal edges; the diagram shows only representative relationships to stay readable.</p>
+
+<div class="mermaid">
+%%{init: {"theme": "dark", "themeVariables": {"fontSize": "15.0px", "fontFamily": "Segoe UI, system-ui, sans-serif", "primaryColor": "#1e293b", "primaryTextColor": "#e2e8f0", "primaryBorderColor": "#38bdf8", "secondaryColor": "#0f172a", "tertiaryColor": "#334155", "lineColor": "#64748b", "textColor": "#e2e8f0"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 48, "rankSpacing": 64, "padding": 14, "diagramPadding": 10, "useMaxWidth": true}}}%%
+flowchart LR
+    %% Section: Extraction Pipeline (21 nodes, 20 edges)
+    github_workflows_ci_test_steps_f6b5b5a0("steps<br/><small>.github/workflows/ci.yml</small>")
+    github_workflows_ci_92e87ad6("ci.yml")
+    github_workflows_ci_jobs_test_075c21e0("test<br/><small>.github/workflows/ci.yml</small>")
+    github_workflows_ci_on_088738fe("on<br/><small>.github/workflows/ci.yml</small>")
+    github_workflows_ci_jobs_8033278d("jobs<br/><small>.github/workflows/ci.yml</small>")
+    github_workflows_ci_on_pull_request_fbd85377("pull_request<br/><small>.github/workflows/ci.yml</small>")
+    github_workflows_ci_name_cadda90f("name<br/><small>.github/workflows/ci.yml</small>")
+    github_workflows_ci_test_runs_on_e66f7cf9("runs-on<br/><small>.github/workflows/ci.yml</small>")
+    github_workflows_ci_test_strategy_d9d5df75("strategy<br/><small>.github/workflows/ci.yml</small>")
+    github_workflows_ci_on_push_45c41402("push<br/><small>.github/workflows/ci.yml</small>")
+    github_workflows_ci_pull_request_branches_463c4abf("branches<br/><small>.github/workflows/ci.yml</small>")
+    github_workflows_ci_push_branches_2e7c25fa("branches<br/><small>.github/workflows/ci.yml</small>")
+    github_workflows_ci_steps_env_b7b2ff41("env<br/><small>.github/workflows/ci.yml</small>")
+    github_workflows_ci_env_pythonpath_a920f7de("PYTHONPATH<br/><small>.github/workflows/ci.yml</small>")
+    github_workflows_ci_steps_with_cc9cbfa2("with<br/><small>.github/workflows/ci.yml</small>")
+    github_workflows_ci_with_python_version_ff53e31f("python-version<br/><small>.github/workflows/ci.yml</small>")
+    github_workflows_ci_strategy_matrix_2bf2c366("matrix<br/><small>.github/workflows/ci.yml</small>")
+    github_workflows_ci_matrix_python_version_111618b8("python-version<br/><small>.github/workflows/ci.yml</small>")
+    github_workflows_ci_92e87ad6 -->|contains| github_workflows_ci_name_cadda90f
+    github_workflows_ci_92e87ad6 -->|contains| github_workflows_ci_on_088738fe
+    github_workflows_ci_92e87ad6 -->|contains| github_workflows_ci_jobs_8033278d
+    github_workflows_ci_jobs_8033278d -->|contains| github_workflows_ci_jobs_test_075c21e0
+    github_workflows_ci_jobs_test_075c21e0 -->|contains| github_workflows_ci_test_runs_on_e66f7cf9
+    github_workflows_ci_jobs_test_075c21e0 -->|contains| github_workflows_ci_test_strategy_d9d5df75
+    github_workflows_ci_jobs_test_075c21e0 -->|contains| github_workflows_ci_test_steps_f6b5b5a0
+    github_workflows_ci_on_088738fe -->|contains| github_workflows_ci_on_push_45c41402
+    github_workflows_ci_on_088738fe -->|contains| github_workflows_ci_on_pull_request_fbd85377
+    github_workflows_ci_on_pull_request_fbd85377 -->|contains| github_workflows_ci_pull_request_branches_463c4abf
+    github_workflows_ci_on_push_45c41402 -->|contains| github_workflows_ci_push_branches_2e7c25fa
+    github_workflows_ci_steps_env_b7b2ff41 -->|contains| github_workflows_ci_env_pythonpath_a920f7de
+    github_workflows_ci_steps_with_cc9cbfa2 -->|contains| github_workflows_ci_with_python_version_ff53e31f
+    github_workflows_ci_strategy_matrix_2bf2c366 -->|contains| github_workflows_ci_matrix_python_version_111618b8
+    github_workflows_ci_test_steps_f6b5b5a0 -->|contains| github_workflows_ci_steps_with_cc9cbfa2
+    github_workflows_ci_test_steps_f6b5b5a0 -->|contains| github_workflows_ci_steps_env_b7b2ff41
+    github_workflows_ci_test_strategy_d9d5df75 -->|contains| github_workflows_ci_strategy_matrix_2bf2c366
+    %% Omitted for readability: 3 nodes, 0 edges
+    class github_workflows_ci_test_steps_f6b5b5a0 function;
+    class github_workflows_ci_92e87ad6 function;
+    class github_workflows_ci_jobs_test_075c21e0 function;
+    class github_workflows_ci_on_088738fe function;
+    class github_workflows_ci_jobs_8033278d function;
+    class github_workflows_ci_on_pull_request_fbd85377 function;
+    class github_workflows_ci_name_cadda90f function;
+    class github_workflows_ci_test_runs_on_e66f7cf9 function;
+    class github_workflows_ci_test_strategy_d9d5df75 function;
+    class github_workflows_ci_on_push_45c41402 function;
+    class github_workflows_ci_pull_request_branches_463c4abf function;
+    class github_workflows_ci_push_branches_2e7c25fa function;
+    class github_workflows_ci_steps_env_b7b2ff41 function;
+    class github_workflows_ci_env_pythonpath_a920f7de klass;
+    class github_workflows_ci_steps_with_cc9cbfa2 function;
+    class github_workflows_ci_with_python_version_ff53e31f function;
+    class github_workflows_ci_strategy_matrix_2bf2c366 function;
+    class github_workflows_ci_matrix_python_version_111618b8 function;
+    classDef entry fill:#422006,stroke:#fbbf24,color:#fde68a,stroke-width:1px;
+    classDef api fill:#450a0a,stroke:#f87171,color:#fee2e2,stroke-width:1px;
+    classDef async fill:#2e1065,stroke:#a78bfa,color:#ede9fe,stroke-width:1px;
+    classDef klass fill:#064e3b,stroke:#34d399,color:#d1fae5,stroke-width:1px;
+    classDef ui fill:#831843,stroke:#f472b6,color:#fce7f3,stroke-width:1px;
+    classDef module fill:#172554,stroke:#60a5fa,color:#dbeafe,stroke-width:1px;
+    classDef test fill:#3f3f46,stroke:#a1a1aa,color:#f4f4f5,stroke-width:1px;
+    classDef concept fill:#292524,stroke:#a8a29e,color:#fafaf9,stroke-dasharray:4 3;
+    classDef function fill:#0f172a,stroke:#38bdf8,color:#e0f2fe,stroke-width:1px;
+</div>
+
+<h3>Call Details</h3>
+<table class="call-table">
+<tr>
+  <th style="width:5%">#</th>
+  <th style="width:28%">Node</th>
+  <th style="width:10%">Type</th>
+  <th style="width:17%">Caller</th>
+  <th style="width:20%">Callees</th>
+  <th style="width:20%">Description</th>
+</tr>
+<tr>
+  <td>1</td>
+  <td><code>ci.yml</code><br><small style="color:var(--muted)">.github/workflows/ci.yml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>ci.yml node in .github/workflows/ci.yml.</td>
+</tr>
+<tr>
+  <td>2</td>
+  <td><code>PYTHONPATH</code><br><small style="color:var(--muted)">.github/workflows/ci.yml</small></td>
+  <td><span class="tag tag-class">Class</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>PYTHONPATH node in .github/workflows/ci.yml.</td>
+</tr>
+<tr>
+  <td>3</td>
+  <td><code>jobs</code><br><small style="color:var(--muted)">.github/workflows/ci.yml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>jobs node in .github/workflows/ci.yml.</td>
+</tr>
+<tr>
+  <td>4</td>
+  <td><code>test</code><br><small style="color:var(--muted)">.github/workflows/ci.yml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Verifies imports, entry points, or version behavior.</td>
+</tr>
+<tr>
+  <td>5</td>
+  <td><code>python-version</code><br><small style="color:var(--muted)">.github/workflows/ci.yml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>python-version node in .github/workflows/ci.yml.</td>
+</tr>
+<tr>
+  <td>6</td>
+  <td><code>name</code><br><small style="color:var(--muted)">.github/workflows/ci.yml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>name node in .github/workflows/ci.yml.</td>
+</tr>
+<tr>
+  <td>7</td>
+  <td><code>on</code><br><small style="color:var(--muted)">.github/workflows/ci.yml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>on node in .github/workflows/ci.yml.</td>
+</tr>
+<tr>
+  <td>8</td>
+  <td><code>pull_request</code><br><small style="color:var(--muted)">.github/workflows/ci.yml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>pull_request node in .github/workflows/ci.yml.</td>
+</tr>
+<tr>
+  <td>9</td>
+  <td><code>push</code><br><small style="color:var(--muted)">.github/workflows/ci.yml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>push node in .github/workflows/ci.yml.</td>
+</tr>
+<tr>
+  <td>10</td>
+  <td><code>branches</code><br><small style="color:var(--muted)">.github/workflows/ci.yml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>branches node in .github/workflows/ci.yml.</td>
+</tr>
+<tr>
+  <td>11</td>
+  <td><code>branches</code><br><small style="color:var(--muted)">.github/workflows/ci.yml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>branches node in .github/workflows/ci.yml.</td>
+</tr>
+<tr>
+  <td>12</td>
+  <td><code>env</code><br><small style="color:var(--muted)">.github/workflows/ci.yml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>env node in .github/workflows/ci.yml.</td>
+</tr>
+<tr>
+  <td>13</td>
+  <td><code>name</code><br><small style="color:var(--muted)">.github/workflows/ci.yml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>name node in .github/workflows/ci.yml.</td>
+</tr>
+<tr>
+  <td>14</td>
+  <td><code>run</code><br><small style="color:var(--muted)">.github/workflows/ci.yml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>run node in .github/workflows/ci.yml.</td>
+</tr>
+<tr>
+  <td>15</td>
+  <td><code>uses</code><br><small style="color:var(--muted)">.github/workflows/ci.yml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>uses node in .github/workflows/ci.yml.</td>
+</tr>
+<tr>
+  <td>16</td>
+  <td><code>with</code><br><small style="color:var(--muted)">.github/workflows/ci.yml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>with node in .github/workflows/ci.yml.</td>
+</tr>
+<tr>
+  <td>17</td>
+  <td><code>matrix</code><br><small style="color:var(--muted)">.github/workflows/ci.yml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>matrix node in .github/workflows/ci.yml.</td>
+</tr>
+<tr>
+  <td>18</td>
+  <td><code>runs-on</code><br><small style="color:var(--muted)">.github/workflows/ci.yml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>runs-on node in .github/workflows/ci.yml.</td>
+</tr>
+<tr>
+  <td>19</td>
+  <td><code>steps</code><br><small style="color:var(--muted)">.github/workflows/ci.yml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>steps node in .github/workflows/ci.yml.</td>
+</tr>
+<tr>
+  <td>20</td>
+  <td><code>strategy</code><br><small style="color:var(--muted)">.github/workflows/ci.yml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>strategy node in .github/workflows/ci.yml.</td>
+</tr>
+<tr>
+  <td>21</td>
+  <td><code>python-version</code><br><small style="color:var(--muted)">.github/workflows/ci.yml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>python-version node in .github/workflows/ci.yml.</td>
+</tr>
+</table>
+
+<div class="grid">
+  <div class="card">
+    <h4>Key Files</h4>
+    <table style="width:100%;font-size:0.85rem;">
+      <tr><th>File</th><th>Coverage</th></tr>
+      <tr><td><code>.github/workflows/ci.yml</code></td><td>21 nodes</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h4>Design Notes</h4>
+    <p>This section comes from graphify community clustering. Relationship summary: contains x20. The diagram prioritizes high-confidence calls or usage relationships; the table keeps the broader node inventory.</p>
+  </div>
+</div>
+<hr>
+
+<!-- ====== 3. Analysis & Clustering ====== -->
+<h2 id="analysis-clustering">3. Analysis &amp; Clustering</h2>
+<p>Analysis &amp; Clustering groups implementation around memory, corepy, dict, resolve, mostly in memory_core.py. This section covers 11 nodes and 12 internal edges; the diagram shows only representative relationships to stay readable.</p>
+
+<div class="mermaid">
+%%{init: {"theme": "dark", "themeVariables": {"fontSize": "15.0px", "fontFamily": "Segoe UI, system-ui, sans-serif", "primaryColor": "#1e293b", "primaryTextColor": "#e2e8f0", "primaryBorderColor": "#38bdf8", "secondaryColor": "#0f172a", "tertiaryColor": "#334155", "lineColor": "#64748b", "textColor": "#e2e8f0"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 48, "rankSpacing": 64, "padding": 14, "diagramPadding": 10, "useMaxWidth": true}}}%%
+flowchart LR
+    %% Section: Analysis &amp; Clustering (11 nodes, 12 edges)
+    subgraph analysis_clustering_memory_core_py_b8dee8f0["memory_core.py"]
+        memory_core_fractalmemoryengine_init_13fe2780("__init__()<br/><small>memory_core.py</small>")
+        memory_core_memoryitem_d0be3121("MemoryItem<br/><small>memory_core.py</small>")
+        memory_core_fractalmemoryengine_configure_22339302("configure()<br/><small>memory_core.py</small>")
+        memory_core_memoryitem_to_dict_382d2431("to_dict()<br/><small>memory_core.py</small>")
+        memory_core_memoryitem_from_dict_6caf8443("from_dict()<br/><small>memory_core.py</small>")
+        memory_core_fractalmemoryengine_load_from_disk_58ba2161("_load_from_disk()<br/><small>memory_core.py</small>")
+        memory_core_resolve_default_storage_path_9b71b2a5("default storage path()<br/><small>memory_core.py</small>")
+        memory_core_rationale_62_a8debda2("A procedural memory atom anchored on th...<br/><small>memory_core.py</small>")
+        memory_core_rationale_33_76fe0073("Resolve the active profile's per-plugin...<br/><small>memory_core.py</small>")
+        memory_core_rationale_178_156c810b("Update runtime configuration for this e...<br/><small>memory_core.py</small>")
+    end
+    path_3150ecd5("Path")
+    memory_core_memoryitem_d0be3121 -->|method| memory_core_memoryitem_to_dict_382d2431
+    memory_core_memoryitem_d0be3121 -->|method| memory_core_memoryitem_from_dict_6caf8443
+    memory_core_fractalmemoryengine_configure_22339302 -->|calls| memory_core_fractalmemoryengine_load_from_disk_58ba2161
+    memory_core_fractalmemoryengine_init_13fe2780 -->|calls| memory_core_resolve_default_storage_path_9b71b2a5
+    memory_core_fractalmemoryengine_init_13fe2780 -->|calls| memory_core_fractalmemoryengine_load_from_disk_58ba2161
+    memory_core_fractalmemoryengine_load_from_disk_58ba2161 -->|calls| memory_core_memoryitem_from_dict_6caf8443
+    class memory_core_fractalmemoryengine_init_13fe2780 function;
+    class memory_core_memoryitem_d0be3121 klass;
+    class memory_core_fractalmemoryengine_configure_22339302 function;
+    class memory_core_memoryitem_to_dict_382d2431 function;
+    class memory_core_memoryitem_from_dict_6caf8443 function;
+    class memory_core_fractalmemoryengine_load_from_disk_58ba2161 function;
+    class memory_core_resolve_default_storage_path_9b71b2a5 function;
+    class memory_core_rationale_62_a8debda2 concept;
+    class memory_core_rationale_33_76fe0073 concept;
+    class memory_core_rationale_178_156c810b concept;
+    class path_3150ecd5 klass;
+    classDef entry fill:#422006,stroke:#fbbf24,color:#fde68a,stroke-width:1px;
+    classDef api fill:#450a0a,stroke:#f87171,color:#fee2e2,stroke-width:1px;
+    classDef async fill:#2e1065,stroke:#a78bfa,color:#ede9fe,stroke-width:1px;
+    classDef klass fill:#064e3b,stroke:#34d399,color:#d1fae5,stroke-width:1px;
+    classDef ui fill:#831843,stroke:#f472b6,color:#fce7f3,stroke-width:1px;
+    classDef module fill:#172554,stroke:#60a5fa,color:#dbeafe,stroke-width:1px;
+    classDef test fill:#3f3f46,stroke:#a1a1aa,color:#f4f4f5,stroke-width:1px;
+    classDef concept fill:#292524,stroke:#a8a29e,color:#fafaf9,stroke-dasharray:4 3;
+    classDef function fill:#0f172a,stroke:#38bdf8,color:#e0f2fe,stroke-width:1px;
+</div>
+
+<h3>Call Details</h3>
+<table class="call-table">
+<tr>
+  <th style="width:5%">#</th>
+  <th style="width:28%">Node</th>
+  <th style="width:10%">Type</th>
+  <th style="width:17%">Caller</th>
+  <th style="width:20%">Callees</th>
+  <th style="width:20%">Description</th>
+</tr>
+<tr>
+  <td>1</td>
+  <td><code>MemoryItem</code><br><small style="color:var(--muted)">memory_core.py</small></td>
+  <td><span class="tag tag-class">Class</span></td>
+  <td><code>remember()</code><br><small style="color:var(--muted)">memory_core.py</small></td>
+  <td><code>from_dict()</code><br><small style="color:var(--muted)">memory_core.py</small><br><code>to_dict()</code><br><small style="color:var(--muted)">memory_core.py</small></td>
+  <td>MemoryItem node in memory_core.py.</td>
+</tr>
+<tr>
+  <td>2</td>
+  <td><code>.from_dict()</code><br><small style="color:var(--muted)">memory_core.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>_load_from_disk()</code><br><small style="color:var(--muted)">memory_core.py</small><br><code>MemoryItem</code><br><small style="color:var(--muted)">memory_core.py</small></td>
+  <td>No direct outbound edge</td>
+  <td>.from_dict() node in memory_core.py.</td>
+</tr>
+<tr>
+  <td>3</td>
+  <td><code>_resolve_default_storage_path()</code><br><small style="color:var(--muted)">memory_core.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>__init__()</code><br><small style="color:var(--muted)">memory_core.py</small><br><code>get_memory_engine()</code><br><small style="color:var(--muted)">memory_core.py</small><br><code>or plugin storage()</code><br><small style="color:var(--muted)">tests/test_memory_core.py</small></td>
+  <td>No direct outbound edge</td>
+  <td>Supports retrieval-augmented Q&amp;A or streaming chat.</td>
+</tr>
+<tr>
+  <td>4</td>
+  <td><code>.configure()</code><br><small style="color:var(--muted)">memory_core.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>FractalMemoryEngine</code><br><small style="color:var(--muted)">memory_core.py</small></td>
+  <td><code>_load_from_disk()</code><br><small style="color:var(--muted)">memory_core.py</small></td>
+  <td>Reads, resolves, or persists project configuration.</td>
+</tr>
+<tr>
+  <td>5</td>
+  <td><code>.__init__()</code><br><small style="color:var(--muted)">memory_core.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>FractalMemoryEngine</code><br><small style="color:var(--muted)">memory_core.py</small></td>
+  <td><code>_load_from_disk()</code><br><small style="color:var(--muted)">memory_core.py</small><br><code>default storage path()</code><br><small style="color:var(--muted)">memory_core.py</small></td>
+  <td>.__init__() node in memory_core.py.</td>
+</tr>
+<tr>
+  <td>6</td>
+  <td><code>._load_from_disk()</code><br><small style="color:var(--muted)">memory_core.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>__init__()</code><br><small style="color:var(--muted)">memory_core.py</small><br><code>configure()</code><br><small style="color:var(--muted)">memory_core.py</small><br><code>FractalMemoryEngine</code><br><small style="color:var(--muted)">memory_core.py</small></td>
+  <td><code>from_dict()</code><br><small style="color:var(--muted)">memory_core.py</small></td>
+  <td>._load_from_disk() node in memory_core.py.</td>
+</tr>
+<tr>
+  <td>7</td>
+  <td><code>.to_dict()</code><br><small style="color:var(--muted)">memory_core.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>MemoryItem</code><br><small style="color:var(--muted)">memory_core.py</small></td>
+  <td>No direct outbound edge</td>
+  <td>.to_dict() node in memory_core.py.</td>
+</tr>
+<tr>
+  <td>8</td>
+  <td><code>Path</code><br><small style="color:var(--muted)"></small></td>
+  <td><span class="tag tag-class">Class</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Path node in project.</td>
+</tr>
+<tr>
+  <td>9</td>
+  <td><code>Update runtime configuration for this engine instance.</code><br><small style="color:var(--muted)">memory_core.py</small></td>
+  <td><span class="tag tag-func">Concept</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Design note for Update runtime configuration for this engine instance..</td>
+</tr>
+<tr>
+  <td>10</td>
+  <td><code>Resolve the active profile&#x27;s per-plugin data file on every call:…</code><br><small style="color:var(--muted)">memory_core.py</small></td>
+  <td><span class="tag tag-func">Concept</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Design note for Resolve the active profile&#x27;s per-plugin data file on every call:….</td>
+</tr>
+<tr>
+  <td>11</td>
+  <td><code>A procedural memory atom anchored on the fractal coordinate manifold.</code><br><small style="color:var(--muted)">memory_core.py</small></td>
+  <td><span class="tag tag-func">Concept</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Design note for A procedural memory atom anchored on the fractal coordinate manifold..</td>
+</tr>
+</table>
+
+<div class="grid">
+  <div class="card">
+    <h4>Key Files</h4>
+    <table style="width:100%;font-size:0.85rem;">
+      <tr><th>File</th><th>Coverage</th></tr>
+      <tr><td><code>memory_core.py</code></td><td>10 nodes</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h4>Design Notes</h4>
+    <p>This section comes from graphify community clustering. Relationship summary: calls x4, references x3, explains x3, method x2. The diagram prioritizes high-confidence calls or usage relationships; the table keeps the broader node inventory.</p>
+  </div>
+</div>
+<hr>
+
+<!-- ====== 4. Tests & Fixtures ====== -->
+<h2 id="tests-fixtures">4. Tests &amp; Fixtures</h2>
+<p>Tests &amp; Fixtures groups implementation around test, memory, tests, corepy, mostly in memory_core.py, tools.py, tests/test_memory_core.py. This section covers 155 nodes and 308 internal edges; the diagram shows only representative relationships to stay readable.</p>
+
+<div class="mermaid">
+%%{init: {"theme": "dark", "themeVariables": {"fontSize": "15.0px", "fontFamily": "Segoe UI, system-ui, sans-serif", "primaryColor": "#1e293b", "primaryTextColor": "#e2e8f0", "primaryBorderColor": "#38bdf8", "secondaryColor": "#0f172a", "tertiaryColor": "#334155", "lineColor": "#64748b", "textColor": "#e2e8f0"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 48, "rankSpacing": 64, "padding": 14, "diagramPadding": 10, "useMaxWidth": true}}}%%
+flowchart LR
+    %% Section: Tests &amp; Fixtures (155 nodes, 308 edges)
+    subgraph tests_fixtures_memory_core_py_4e826a69["memory_core.py"]
+        memory_core_5d4be134("memory_core.py")
+        memory_core_fractalcoordinateprojector_24388ff2("FractalCoordinateProjector<br/><small>memory_core.py</small>")
+        memory_core_fractalcoordinateprojector_project_t_88534502("project_text()<br/><small>memory_core.py</small>")
+        memory_core_fractalcoordinateprojector_compute_e_d5dcce7a("compute_escape_time()<br/><small>memory_core.py</small>")
+        memory_core_fractalmemoryengine_f2ced0a5("FractalMemoryEngine<br/><small>memory_core.py</small>")
+        memory_core_fractalmemoryengine_remember_d5be63d7("remember()<br/><small>memory_core.py</small>")
+        memory_core_fractalmemoryengine_recall_e037e7ab("recall()<br/><small>memory_core.py</small>")
+        memory_core_fractalmemoryengine_consolidate_c2dc7f37("consolidate()<br/><small>memory_core.py</small>")
+        memory_core_fractalmemoryengine_step_decay_16bd7126("step_decay()<br/><small>memory_core.py</small>")
+        memory_core_fractalmemoryengine_inspect_1310d5b3("inspect()<br/><small>memory_core.py</small>")
+        memory_core_fractalmemoryengine_wipe_0c42b69b("wipe()<br/><small>memory_core.py</small>")
+        memory_core_fractalmemoryengine_compute_state_se_59c8400d("compute_state_seal()<br/><small>memory_core.py</small>")
+        memory_core_fractalmemoryengine_tokenize_6e26bada("_tokenize()<br/><small>memory_core.py</small>")
+    end
+    init_fd62812f("__init__.py")
+    tests_test_doctor_2a46c41a("test_doctor.py")
+    tests_test_memory_core_9b5f284d("test_memory_core.py")
+    tests_test_plugin_compliance_ef0e825d("test_plugin_compliance.py")
+    tests_test_tools_7b287728("test_tools.py")
+    memory_core_fractalcoordinateprojector_24388ff2 -->|method| memory_core_fractalcoordinateprojector_project_t_88534502
+    memory_core_fractalcoordinateprojector_24388ff2 -->|method| memory_core_fractalcoordinateprojector_compute_e_d5dcce7a
+    memory_core_fractalmemoryengine_f2ced0a5 -->|method| memory_core_fractalmemoryengine_remember_d5be63d7
+    memory_core_fractalmemoryengine_f2ced0a5 -->|method| memory_core_fractalmemoryengine_recall_e037e7ab
+    memory_core_fractalmemoryengine_f2ced0a5 -->|method| memory_core_fractalmemoryengine_consolidate_c2dc7f37
+    memory_core_fractalmemoryengine_f2ced0a5 -->|method| memory_core_fractalmemoryengine_step_decay_16bd7126
+    memory_core_fractalmemoryengine_f2ced0a5 -->|method| memory_core_fractalmemoryengine_inspect_1310d5b3
+    memory_core_fractalmemoryengine_f2ced0a5 -->|method| memory_core_fractalmemoryengine_wipe_0c42b69b
+    memory_core_fractalmemoryengine_f2ced0a5 -->|method| memory_core_fractalmemoryengine_compute_state_se_59c8400d
+    memory_core_fractalmemoryengine_f2ced0a5 -->|method| memory_core_fractalmemoryengine_tokenize_6e26bada
+    memory_core_fractalmemoryengine_remember_d5be63d7 -->|calls| memory_core_fractalcoordinateprojector_project_t_88534502
+    memory_core_fractalmemoryengine_remember_d5be63d7 -->|calls| memory_core_fractalcoordinateprojector_compute_e_d5dcce7a
+    memory_core_fractalmemoryengine_consolidate_c2dc7f37 -->|calls| memory_core_fractalmemoryengine_compute_state_se_59c8400d
+    memory_core_fractalmemoryengine_inspect_1310d5b3 -->|calls| memory_core_fractalmemoryengine_compute_state_se_59c8400d
+    memory_core_fractalmemoryengine_recall_e037e7ab -->|calls| memory_core_fractalmemoryengine_tokenize_6e26bada
+    memory_core_fractalmemoryengine_recall_e037e7ab -->|calls| memory_core_fractalcoordinateprojector_project_t_88534502
+    memory_core_fractalmemoryengine_wipe_0c42b69b -->|calls| memory_core_fractalmemoryengine_compute_state_se_59c8400d
+    tests_test_memory_core_9b5f284d -->|imports| memory_core_fractalcoordinateprojector_24388ff2
+    tests_test_memory_core_9b5f284d -->|imports| memory_core_fractalmemoryengine_f2ced0a5
+    tests_test_memory_core_9b5f284d -->|imports| memory_core_5d4be134
+    tests_test_tools_7b287728 -->|imports| memory_core_5d4be134
+    tests_test_doctor_2a46c41a -->|imports| init_fd62812f
+    %% Omitted for readability: 137 nodes, 0 edges
+    class memory_core_5d4be134 module;
+    class memory_core_fractalcoordinateprojector_24388ff2 klass;
+    class memory_core_fractalcoordinateprojector_project_t_88534502 function;
+    class memory_core_fractalcoordinateprojector_compute_e_d5dcce7a function;
+    class memory_core_fractalmemoryengine_f2ced0a5 klass;
+    class memory_core_fractalmemoryengine_remember_d5be63d7 function;
+    class memory_core_fractalmemoryengine_recall_e037e7ab function;
+    class memory_core_fractalmemoryengine_consolidate_c2dc7f37 function;
+    class memory_core_fractalmemoryengine_step_decay_16bd7126 function;
+    class memory_core_fractalmemoryengine_inspect_1310d5b3 function;
+    class memory_core_fractalmemoryengine_wipe_0c42b69b function;
+    class memory_core_fractalmemoryengine_compute_state_se_59c8400d function;
+    class memory_core_fractalmemoryengine_tokenize_6e26bada function;
+    class init_fd62812f module;
+    class tests_test_doctor_2a46c41a test;
+    class tests_test_memory_core_9b5f284d test;
+    class tests_test_plugin_compliance_ef0e825d test;
+    class tests_test_tools_7b287728 test;
+    classDef entry fill:#422006,stroke:#fbbf24,color:#fde68a,stroke-width:1px;
+    classDef api fill:#450a0a,stroke:#f87171,color:#fee2e2,stroke-width:1px;
+    classDef async fill:#2e1065,stroke:#a78bfa,color:#ede9fe,stroke-width:1px;
+    classDef klass fill:#064e3b,stroke:#34d399,color:#d1fae5,stroke-width:1px;
+    classDef ui fill:#831843,stroke:#f472b6,color:#fce7f3,stroke-width:1px;
+    classDef module fill:#172554,stroke:#60a5fa,color:#dbeafe,stroke-width:1px;
+    classDef test fill:#3f3f46,stroke:#a1a1aa,color:#f4f4f5,stroke-width:1px;
+    classDef concept fill:#292524,stroke:#a8a29e,color:#fafaf9,stroke-dasharray:4 3;
+    classDef function fill:#0f172a,stroke:#38bdf8,color:#e0f2fe,stroke-width:1px;
+</div>
+
+<h3>Call Details</h3>
+<table class="call-table">
+<tr>
+  <th style="width:5%">#</th>
+  <th style="width:28%">Node</th>
+  <th style="width:10%">Type</th>
+  <th style="width:17%">Caller</th>
+  <th style="width:20%">Callees</th>
+  <th style="width:20%">Description</th>
+</tr>
+<tr>
+  <td>1</td>
+  <td><code>FractalCoordinateProjector</code><br><small style="color:var(--muted)">memory_core.py</small></td>
+  <td><span class="tag tag-class">Class</span></td>
+  <td><code>coordinate projection bounds()</code><br><small style="color:var(--muted)">tests/test_memory_core.py</small><br><code>test_memory_core.py</code><br><small style="color:var(--muted)">tests/test_memory_core.py</small></td>
+  <td><code>compute_escape_time()</code><br><small style="color:var(--muted)">memory_core.py</small><br><code>project_text()</code><br><small style="color:var(--muted)">memory_core.py</small></td>
+  <td>FractalCoordinateProjector node in memory_core.py.</td>
+</tr>
+<tr>
+  <td>2</td>
+  <td><code>FractalMemoryEngine</code><br><small style="color:var(--muted)">memory_core.py</small></td>
+  <td><span class="tag tag-class">Class</span></td>
+  <td><code>and hebbian promotion()</code><br><small style="color:var(--muted)">tests/test_memory_core.py</small><br><code>cryptographic state seal()</code><br><small style="color:var(--muted)">tests/test_memory_core.py</small><br><code>decay and consolidation()</code><br><small style="color:var(--muted)">tests/test_memory_core.py</small><br>+4 more</td>
+  <td><code>__init__()</code><br><small style="color:var(--muted)">memory_core.py</small><br><code>_load_from_disk()</code><br><small style="color:var(--muted)">memory_core.py</small><br><code>_save_to_disk()</code><br><small style="color:var(--muted)">memory_core.py</small><br>+10 more</td>
+  <td>FractalMemoryEngine node in memory_core.py.</td>
+</tr>
+<tr>
+  <td>3</td>
+  <td><code>.remember()</code><br><small style="color:var(--muted)">memory_core.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>and hebbian promotion()</code><br><small style="color:var(--muted)">tests/test_memory_core.py</small><br><code>and hook separation()</code><br><small style="color:var(--muted)">tests/test_memory_core.py</small><br><code>call keyword injection()</code><br><small style="color:var(--muted)">tests/test_hooks.py</small><br>+5 more</td>
+  <td><code>_save_to_disk()</code><br><small style="color:var(--muted)">memory_core.py</small><br><code>compute_escape_time()</code><br><small style="color:var(--muted)">memory_core.py</small><br><code>MemoryItem</code><br><small style="color:var(--muted)">memory_core.py</small><br>+1 more</td>
+  <td>.remember() node in memory_core.py.</td>
+</tr>
+<tr>
+  <td>4</td>
+  <td><code>.compute_escape_time()</code><br><small style="color:var(--muted)">memory_core.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>coordinate projection bounds()</code><br><small style="color:var(--muted)">tests/test_memory_core.py</small><br><code>FractalCoordinateProjector</code><br><small style="color:var(--muted)">memory_core.py</small><br><code>remember()</code><br><small style="color:var(--muted)">memory_core.py</small></td>
+  <td>No direct outbound edge</td>
+  <td>.compute_escape_time() node in memory_core.py.</td>
+</tr>
+<tr>
+  <td>5</td>
+  <td><code>.project_text()</code><br><small style="color:var(--muted)">memory_core.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>coordinate projection bounds()</code><br><small style="color:var(--muted)">tests/test_memory_core.py</small><br><code>FractalCoordinateProjector</code><br><small style="color:var(--muted)">memory_core.py</small><br><code>recall()</code><br><small style="color:var(--muted)">memory_core.py</small><br>+1 more</td>
+  <td>No direct outbound edge</td>
+  <td>.project_text() node in memory_core.py.</td>
+</tr>
+<tr>
+  <td>6</td>
+  <td><code>.compute_state_seal()</code><br><small style="color:var(--muted)">memory_core.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>consolidate()</code><br><small style="color:var(--muted)">memory_core.py</small><br><code>cryptographic state seal()</code><br><small style="color:var(--muted)">tests/test_memory_core.py</small><br><code>FractalMemoryEngine</code><br><small style="color:var(--muted)">memory_core.py</small><br>+2 more</td>
+  <td>No direct outbound edge</td>
+  <td>.compute_state_seal() node in memory_core.py.</td>
+</tr>
+<tr>
+  <td>7</td>
+  <td><code>.consolidate()</code><br><small style="color:var(--muted)">memory_core.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>decay and consolidation()</code><br><small style="color:var(--muted)">tests/test_memory_core.py</small><br><code>FractalMemoryEngine</code><br><small style="color:var(--muted)">memory_core.py</small></td>
+  <td><code>_save_to_disk()</code><br><small style="color:var(--muted)">memory_core.py</small><br><code>compute_state_seal()</code><br><small style="color:var(--muted)">memory_core.py</small></td>
+  <td>.consolidate() node in memory_core.py.</td>
+</tr>
+<tr>
+  <td>8</td>
+  <td><code>.inspect()</code><br><small style="color:var(--muted)">memory_core.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>FractalMemoryEngine</code><br><small style="color:var(--muted)">memory_core.py</small></td>
+  <td><code>compute_state_seal()</code><br><small style="color:var(--muted)">memory_core.py</small></td>
+  <td>.inspect() node in memory_core.py.</td>
+</tr>
+<tr>
+  <td>9</td>
+  <td><code>.recall()</code><br><small style="color:var(--muted)">memory_core.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>and hebbian promotion()</code><br><small style="color:var(--muted)">tests/test_memory_core.py</small><br><code>FractalMemoryEngine</code><br><small style="color:var(--muted)">memory_core.py</small></td>
+  <td><code>_save_to_disk()</code><br><small style="color:var(--muted)">memory_core.py</small><br><code>_tokenize()</code><br><small style="color:var(--muted)">memory_core.py</small><br><code>_trigrams()</code><br><small style="color:var(--muted)">memory_core.py</small><br>+1 more</td>
+  <td>.recall() node in memory_core.py.</td>
+</tr>
+<tr>
+  <td>10</td>
+  <td><code>._save_to_disk()</code><br><small style="color:var(--muted)">memory_core.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>consolidate()</code><br><small style="color:var(--muted)">memory_core.py</small><br><code>FractalMemoryEngine</code><br><small style="color:var(--muted)">memory_core.py</small><br><code>recall()</code><br><small style="color:var(--muted)">memory_core.py</small><br>+3 more</td>
+  <td>No direct outbound edge</td>
+  <td>._save_to_disk() node in memory_core.py.</td>
+</tr>
+<tr>
+  <td>11</td>
+  <td><code>.step_decay()</code><br><small style="color:var(--muted)">memory_core.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>decay and consolidation()</code><br><small style="color:var(--muted)">tests/test_memory_core.py</small><br><code>FractalMemoryEngine</code><br><small style="color:var(--muted)">memory_core.py</small></td>
+  <td><code>_save_to_disk()</code><br><small style="color:var(--muted)">memory_core.py</small></td>
+  <td>.step_decay() node in memory_core.py.</td>
+</tr>
+<tr>
+  <td>12</td>
+  <td><code>._tokenize()</code><br><small style="color:var(--muted)">memory_core.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>FractalMemoryEngine</code><br><small style="color:var(--muted)">memory_core.py</small><br><code>recall()</code><br><small style="color:var(--muted)">memory_core.py</small></td>
+  <td>No direct outbound edge</td>
+  <td>._tokenize() node in memory_core.py.</td>
+</tr>
+<tr>
+  <td>13</td>
+  <td><code>._trigrams()</code><br><small style="color:var(--muted)">memory_core.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>FractalMemoryEngine</code><br><small style="color:var(--muted)">memory_core.py</small><br><code>recall()</code><br><small style="color:var(--muted)">memory_core.py</small></td>
+  <td>No direct outbound edge</td>
+  <td>._trigrams() node in memory_core.py.</td>
+</tr>
+<tr>
+  <td>14</td>
+  <td><code>.wipe()</code><br><small style="color:var(--muted)">memory_core.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>FractalMemoryEngine</code><br><small style="color:var(--muted)">memory_core.py</small></td>
+  <td><code>_save_to_disk()</code><br><small style="color:var(--muted)">memory_core.py</small><br><code>compute_state_seal()</code><br><small style="color:var(--muted)">memory_core.py</small></td>
+  <td>.wipe() node in memory_core.py.</td>
+</tr>
+<tr>
+  <td>15</td>
+  <td><code>test_atomic_save_crash_preserves_existing_store()</code><br><small style="color:var(--muted)">tests/test_memory_core.py</small></td>
+  <td><span class="tag tag-func">Test</span></td>
+  <td>External entry / no inbound edge</td>
+  <td><code>FractalMemoryEngine</code><br><small style="color:var(--muted)">memory_core.py</small><br><code>json</code><br><code>pytest</code><br>+2 more</td>
+  <td>Verifies imports, entry points, or version behavior.</td>
+</tr>
+<tr>
+  <td>16</td>
+  <td><code>test_coordinate_projection_bounds()</code><br><small style="color:var(--muted)">tests/test_memory_core.py</small></td>
+  <td><span class="tag tag-func">Test</span></td>
+  <td>External entry / no inbound edge</td>
+  <td><code>compute_escape_time()</code><br><small style="color:var(--muted)">memory_core.py</small><br><code>FractalCoordinateProjector</code><br><small style="color:var(--muted)">memory_core.py</small><br><code>project_text()</code><br><small style="color:var(--muted)">memory_core.py</small></td>
+  <td>Verifies imports, entry points, or version behavior.</td>
+</tr>
+<tr>
+  <td>17</td>
+  <td><code>test_cryptographic_state_seal()</code><br><small style="color:var(--muted)">tests/test_memory_core.py</small></td>
+  <td><span class="tag tag-func">Test</span></td>
+  <td>External entry / no inbound edge</td>
+  <td><code>compute_state_seal()</code><br><small style="color:var(--muted)">memory_core.py</small><br><code>FractalMemoryEngine</code><br><small style="color:var(--muted)">memory_core.py</small><br><code>remember()</code><br><small style="color:var(--muted)">memory_core.py</small><br>+1 more</td>
+  <td>Builds dependency relationships and graph data.</td>
+</tr>
+<tr>
+  <td>18</td>
+  <td><code>test_fail_closed_without_hermes_home_or_plugin_storage()</code><br><small style="color:var(--muted)">tests/test_memory_core.py</small></td>
+  <td><span class="tag tag-func">Test</span></td>
+  <td>External entry / no inbound edge</td>
+  <td><code>default storage path()</code><br><small style="color:var(--muted)">memory_core.py</small><br><code>pytest</code></td>
+  <td>Supports retrieval-augmented Q&amp;A or streaming chat.</td>
+</tr>
+<tr>
+  <td>19</td>
+  <td><code>test_multi_profile_isolation_and_hook_separation()</code><br><small style="color:var(--muted)">tests/test_memory_core.py</small></td>
+  <td><span class="tag tag-func">Test</span></td>
+  <td>External entry / no inbound edge</td>
+  <td><code>get_memory_engine()</code><br><small style="color:var(--muted)">memory_core.py</small><br><code>pre_llm_call_hook()</code><br><small style="color:var(--muted)">hooks.py</small><br><code>remember()</code><br><small style="color:var(--muted)">memory_core.py</small><br>+2 more</td>
+  <td>Verifies imports, entry points, or version behavior.</td>
+</tr>
+<tr>
+  <td>20</td>
+  <td><code>test_orbital_decay_and_consolidation()</code><br><small style="color:var(--muted)">tests/test_memory_core.py</small></td>
+  <td><span class="tag tag-func">Test</span></td>
+  <td>External entry / no inbound edge</td>
+  <td><code>consolidate()</code><br><small style="color:var(--muted)">memory_core.py</small><br><code>FractalMemoryEngine</code><br><small style="color:var(--muted)">memory_core.py</small><br><code>remember()</code><br><small style="color:var(--muted)">memory_core.py</small><br>+2 more</td>
+  <td>Verifies imports, entry points, or version behavior.</td>
+</tr>
+<tr>
+  <td>21</td>
+  <td><code>test_recall_and_hebbian_promotion()</code><br><small style="color:var(--muted)">tests/test_memory_core.py</small></td>
+  <td><span class="tag tag-func">Test</span></td>
+  <td>External entry / no inbound edge</td>
+  <td><code>FractalMemoryEngine</code><br><small style="color:var(--muted)">memory_core.py</small><br><code>recall()</code><br><small style="color:var(--muted)">memory_core.py</small><br><code>remember()</code><br><small style="color:var(--muted)">memory_core.py</small><br>+1 more</td>
+  <td>Verifies imports, entry points, or version behavior.</td>
+</tr>
+<tr>
+  <td>22</td>
+  <td><code>test_three_ring_auto_assignment()</code><br><small style="color:var(--muted)">tests/test_memory_core.py</small></td>
+  <td><span class="tag tag-func">Test</span></td>
+  <td>External entry / no inbound edge</td>
+  <td><code>FractalMemoryEngine</code><br><small style="color:var(--muted)">memory_core.py</small><br><code>remember()</code><br><small style="color:var(--muted)">memory_core.py</small><br><code>tempfile</code></td>
+  <td>Verifies imports, entry points, or version behavior.</td>
+</tr>
+<tr>
+  <td>23</td>
+  <td><code>Any</code><br><small style="color:var(--muted)"></small></td>
+  <td><span class="tag tag-class">Class</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Any node in project.</td>
+</tr>
+<tr>
+  <td>24</td>
+  <td><code>test_memory_core.py</code><br><small style="color:var(--muted)">tests/test_memory_core.py</small></td>
+  <td><span class="tag tag-func">Test</span></td>
+  <td>External entry / no inbound edge</td>
+  <td><code>FractalCoordinateProjector</code><br><small style="color:var(--muted)">memory_core.py</small><br><code>FractalMemoryEngine</code><br><small style="color:var(--muted)">memory_core.py</small><br><code>hooks.py</code><br><small style="color:var(--muted)">hooks.py</small><br>+9 more</td>
+  <td>Module file in tests/test_memory_core.py.</td>
+</tr>
+<tr>
+  <td>25</td>
+  <td><code>Deterministically maps text to canonical coordinates c = (cx, cy) within the…</code><br><small style="color:var(--muted)">memory_core.py</small></td>
+  <td><span class="tag tag-func">Concept</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Design note for Deterministically maps text to canonical coordinates c = (cx, cy) within the….</td>
+</tr>
+<tr>
+  <td>26</td>
+  <td><code>Evaluates polynomial escape iteration under z_{n+1} = z_n^2 + c. Boundary-…</code><br><small style="color:var(--muted)">memory_core.py</small></td>
+  <td><span class="tag tag-func">Concept</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Design note for Evaluates polynomial escape iteration under z_{n+1} = z_n^2 + c. Boundary-….</td>
+</tr>
+<tr>
+  <td>27</td>
+  <td><code>3-Tier Orbital Memory Manifold for Hermes Agent: - Ring 1 (Sensory Buffer,…</code><br><small style="color:var(--muted)">memory_core.py</small></td>
+  <td><span class="tag tag-func">Concept</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Design note for 3-Tier Orbital Memory Manifold for Hermes Agent: - Ring 1 (Sensory Buffer,….</td>
+</tr>
+<tr>
+  <td>28</td>
+  <td><code>Stores or updates a memory item on the manifold.</code><br><small style="color:var(--muted)">memory_core.py</small></td>
+  <td><span class="tag tag-func">Concept</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Design note for Stores or updates a memory item on the manifold..</td>
+</tr>
+<tr>
+  <td>29</td>
+  <td><code>Recalls top-K resonant memories based on lexical overlap, character trigram…</code><br><small style="color:var(--muted)">memory_core.py</small></td>
+  <td><span class="tag tag-func">Concept</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Design note for Recalls top-K resonant memories based on lexical overlap, character trigram….</td>
+</tr>
+<tr>
+  <td>30</td>
+  <td><code>Consolidates active memories across rings: - Promotes high-resonance task items…</code><br><small style="color:var(--muted)">memory_core.py</small></td>
+  <td><span class="tag tag-func">Concept</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Design note for Consolidates active memories across rings: - Promotes high-resonance task items….</td>
+</tr>
+</table>
+
+<div class="grid">
+  <div class="card">
+    <h4>Key Files</h4>
+    <table style="width:100%;font-size:0.85rem;">
+      <tr><th>File</th><th>Coverage</th></tr>
+      <tr><td><code>memory_core.py</code></td><td>34 nodes</td></tr>
+<tr><td><code>tools.py</code></td><td>25 nodes</td></tr>
+<tr><td><code>tests/test_memory_core.py</code></td><td>13 nodes</td></tr>
+<tr><td><code>tests/test_doctor.py</code></td><td>11 nodes</td></tr>
+<tr><td><code>tests/test_plugin_compliance.py</code></td><td>10 nodes</td></tr>
+<tr><td><code>tests/test_tools.py</code></td><td>9 nodes</td></tr>
+<tr><td><code>hooks.py</code></td><td>8 nodes</td></tr>
+<tr><td><code>tests/test_hooks.py</code></td><td>8 nodes</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h4>Design Notes</h4>
+    <p>This section comes from graphify community clustering. Relationship summary: calls x94, contains x45, imports x43, explains x41. The diagram prioritizes high-confidence calls or usage relationships; the table keeps the broader node inventory.</p>
+  </div>
+</div>
+<hr>
+
+<!-- ====== 5. plugin.yaml ====== -->
+<h2 id="plugin-yaml">5. plugin.yaml</h2>
+<p>plugin.yaml groups implementation around pluginyaml, description, default, label, mostly in plugin.yaml. This section covers 31 nodes and 30 internal edges; the diagram shows only representative relationships to stay readable.</p>
+
+<div class="mermaid">
+%%{init: {"theme": "dark", "themeVariables": {"fontSize": "15.0px", "fontFamily": "Segoe UI, system-ui, sans-serif", "primaryColor": "#1e293b", "primaryTextColor": "#e2e8f0", "primaryBorderColor": "#38bdf8", "secondaryColor": "#0f172a", "tertiaryColor": "#334155", "lineColor": "#64748b", "textColor": "#e2e8f0"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 48, "rankSpacing": 64, "padding": 14, "diagramPadding": 10, "useMaxWidth": true}}}%%
+flowchart LR
+    %% Section: plugin.yaml (31 nodes, 30 edges)
+    plugin_fd8c7c8e("plugin.yaml")
+    plugin_config_schema_auto_inject_context_051e5c8d("auto_inject_context<br/><small>plugin.yaml</small>")
+    plugin_config_schema_min_recall_resonance_f45e859a("min_recall_resonance<br/><small>plugin.yaml</small>")
+    plugin_config_schema_storage_path_4f5d3384("storage_path<br/><small>plugin.yaml</small>")
+    plugin_config_schema_f45681a7("config_schema<br/><small>plugin.yaml</small>")
+    plugin_name_9fad3266("name<br/><small>plugin.yaml</small>")
+    plugin_homepage_2a4da7a4("homepage<br/><small>plugin.yaml</small>")
+    plugin_requires_hermes_498d553f("requires_hermes<br/><small>plugin.yaml</small>")
+    plugin_tags_1d197169("tags<br/><small>plugin.yaml</small>")
+    plugin_provides_tools_90489cd4("provides_tools<br/><small>plugin.yaml</small>")
+    plugin_version_d030f233("version<br/><small>plugin.yaml</small>")
+    plugin_provides_hooks_dd3b8b2f("provides_hooks<br/><small>plugin.yaml</small>")
+    plugin_requires_env_de76540a("requires_env<br/><small>plugin.yaml</small>")
+    plugin_description_bf1dd9c5("description<br/><small>plugin.yaml</small>")
+    plugin_author_b7756fae("author<br/><small>plugin.yaml</small>")
+    plugin_license_717d6a29("license<br/><small>plugin.yaml</small>")
+    plugin_auto_inject_context_type_c7fbd6ef("type<br/><small>plugin.yaml</small>")
+    plugin_auto_inject_context_default_94a95705("default<br/><small>plugin.yaml</small>")
+    plugin_fd8c7c8e -->|contains| plugin_name_9fad3266
+    plugin_fd8c7c8e -->|contains| plugin_homepage_2a4da7a4
+    plugin_fd8c7c8e -->|contains| plugin_requires_hermes_498d553f
+    plugin_fd8c7c8e -->|contains| plugin_tags_1d197169
+    plugin_fd8c7c8e -->|contains| plugin_provides_tools_90489cd4
+    plugin_fd8c7c8e -->|contains| plugin_version_d030f233
+    plugin_fd8c7c8e -->|contains| plugin_provides_hooks_dd3b8b2f
+    plugin_fd8c7c8e -->|contains| plugin_requires_env_de76540a
+    plugin_fd8c7c8e -->|contains| plugin_config_schema_f45681a7
+    plugin_fd8c7c8e -->|contains| plugin_description_bf1dd9c5
+    plugin_fd8c7c8e -->|contains| plugin_author_b7756fae
+    plugin_fd8c7c8e -->|contains| plugin_license_717d6a29
+    plugin_config_schema_f45681a7 -->|contains| plugin_config_schema_storage_path_4f5d3384
+    plugin_config_schema_f45681a7 -->|contains| plugin_config_schema_auto_inject_context_051e5c8d
+    plugin_config_schema_f45681a7 -->|contains| plugin_config_schema_min_recall_resonance_f45e859a
+    plugin_config_schema_auto_inject_context_051e5c8d -->|contains| plugin_auto_inject_context_type_c7fbd6ef
+    plugin_config_schema_auto_inject_context_051e5c8d -->|contains| plugin_auto_inject_context_default_94a95705
+    %% Omitted for readability: 13 nodes, 0 edges
+    class plugin_fd8c7c8e function;
+    class plugin_config_schema_auto_inject_context_051e5c8d function;
+    class plugin_config_schema_min_recall_resonance_f45e859a function;
+    class plugin_config_schema_storage_path_4f5d3384 function;
+    class plugin_config_schema_f45681a7 function;
+    class plugin_name_9fad3266 function;
+    class plugin_homepage_2a4da7a4 function;
+    class plugin_requires_hermes_498d553f function;
+    class plugin_tags_1d197169 function;
+    class plugin_provides_tools_90489cd4 function;
+    class plugin_version_d030f233 function;
+    class plugin_provides_hooks_dd3b8b2f ui;
+    class plugin_requires_env_de76540a function;
+    class plugin_description_bf1dd9c5 function;
+    class plugin_author_b7756fae function;
+    class plugin_license_717d6a29 function;
+    class plugin_auto_inject_context_type_c7fbd6ef function;
+    class plugin_auto_inject_context_default_94a95705 function;
+    classDef entry fill:#422006,stroke:#fbbf24,color:#fde68a,stroke-width:1px;
+    classDef api fill:#450a0a,stroke:#f87171,color:#fee2e2,stroke-width:1px;
+    classDef async fill:#2e1065,stroke:#a78bfa,color:#ede9fe,stroke-width:1px;
+    classDef klass fill:#064e3b,stroke:#34d399,color:#d1fae5,stroke-width:1px;
+    classDef ui fill:#831843,stroke:#f472b6,color:#fce7f3,stroke-width:1px;
+    classDef module fill:#172554,stroke:#60a5fa,color:#dbeafe,stroke-width:1px;
+    classDef test fill:#3f3f46,stroke:#a1a1aa,color:#f4f4f5,stroke-width:1px;
+    classDef concept fill:#292524,stroke:#a8a29e,color:#fafaf9,stroke-dasharray:4 3;
+    classDef function fill:#0f172a,stroke:#38bdf8,color:#e0f2fe,stroke-width:1px;
+</div>
+
+<h3>Call Details</h3>
+<table class="call-table">
+<tr>
+  <th style="width:5%">#</th>
+  <th style="width:28%">Node</th>
+  <th style="width:10%">Type</th>
+  <th style="width:17%">Caller</th>
+  <th style="width:20%">Callees</th>
+  <th style="width:20%">Description</th>
+</tr>
+<tr>
+  <td>1</td>
+  <td><code>plugin.yaml</code><br><small style="color:var(--muted)">plugin.yaml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>plugin.yaml node in plugin.yaml.</td>
+</tr>
+<tr>
+  <td>2</td>
+  <td><code>author</code><br><small style="color:var(--muted)">plugin.yaml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>author node in plugin.yaml.</td>
+</tr>
+<tr>
+  <td>3</td>
+  <td><code>default</code><br><small style="color:var(--muted)">plugin.yaml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>default node in plugin.yaml.</td>
+</tr>
+<tr>
+  <td>4</td>
+  <td><code>description</code><br><small style="color:var(--muted)">plugin.yaml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>description node in plugin.yaml.</td>
+</tr>
+<tr>
+  <td>5</td>
+  <td><code>label</code><br><small style="color:var(--muted)">plugin.yaml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>label node in plugin.yaml.</td>
+</tr>
+<tr>
+  <td>6</td>
+  <td><code>required</code><br><small style="color:var(--muted)">plugin.yaml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>required node in plugin.yaml.</td>
+</tr>
+<tr>
+  <td>7</td>
+  <td><code>type</code><br><small style="color:var(--muted)">plugin.yaml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>type node in plugin.yaml.</td>
+</tr>
+<tr>
+  <td>8</td>
+  <td><code>config_schema</code><br><small style="color:var(--muted)">plugin.yaml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Reads, resolves, or persists project configuration.</td>
+</tr>
+<tr>
+  <td>9</td>
+  <td><code>auto_inject_context</code><br><small style="color:var(--muted)">plugin.yaml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>auto_inject_context node in plugin.yaml.</td>
+</tr>
+<tr>
+  <td>10</td>
+  <td><code>min_recall_resonance</code><br><small style="color:var(--muted)">plugin.yaml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>min_recall_resonance node in plugin.yaml.</td>
+</tr>
+<tr>
+  <td>11</td>
+  <td><code>storage_path</code><br><small style="color:var(--muted)">plugin.yaml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Supports retrieval-augmented Q&amp;A or streaming chat.</td>
+</tr>
+<tr>
+  <td>12</td>
+  <td><code>description</code><br><small style="color:var(--muted)">plugin.yaml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>description node in plugin.yaml.</td>
+</tr>
+<tr>
+  <td>13</td>
+  <td><code>homepage</code><br><small style="color:var(--muted)">plugin.yaml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Organizes documentation pages, navigation, or content lookup.</td>
+</tr>
+<tr>
+  <td>14</td>
+  <td><code>license</code><br><small style="color:var(--muted)">plugin.yaml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>license node in plugin.yaml.</td>
+</tr>
+<tr>
+  <td>15</td>
+  <td><code>default</code><br><small style="color:var(--muted)">plugin.yaml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>default node in plugin.yaml.</td>
+</tr>
+<tr>
+  <td>16</td>
+  <td><code>description</code><br><small style="color:var(--muted)">plugin.yaml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>description node in plugin.yaml.</td>
+</tr>
+<tr>
+  <td>17</td>
+  <td><code>label</code><br><small style="color:var(--muted)">plugin.yaml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>label node in plugin.yaml.</td>
+</tr>
+<tr>
+  <td>18</td>
+  <td><code>required</code><br><small style="color:var(--muted)">plugin.yaml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>required node in plugin.yaml.</td>
+</tr>
+<tr>
+  <td>19</td>
+  <td><code>type</code><br><small style="color:var(--muted)">plugin.yaml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>type node in plugin.yaml.</td>
+</tr>
+<tr>
+  <td>20</td>
+  <td><code>name</code><br><small style="color:var(--muted)">plugin.yaml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>name node in plugin.yaml.</td>
+</tr>
+<tr>
+  <td>21</td>
+  <td><code>provides_hooks</code><br><small style="color:var(--muted)">plugin.yaml</small></td>
+  <td><span class="tag tag-hook">UI</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>provides_hooks node in plugin.yaml.</td>
+</tr>
+<tr>
+  <td>22</td>
+  <td><code>provides_tools</code><br><small style="color:var(--muted)">plugin.yaml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>provides_tools node in plugin.yaml.</td>
+</tr>
+<tr>
+  <td>23</td>
+  <td><code>requires_env</code><br><small style="color:var(--muted)">plugin.yaml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>requires_env node in plugin.yaml.</td>
+</tr>
+<tr>
+  <td>24</td>
+  <td><code>requires_hermes</code><br><small style="color:var(--muted)">plugin.yaml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>requires_hermes node in plugin.yaml.</td>
+</tr>
+<tr>
+  <td>25</td>
+  <td><code>default</code><br><small style="color:var(--muted)">plugin.yaml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>default node in plugin.yaml.</td>
+</tr>
+<tr>
+  <td>26</td>
+  <td><code>description</code><br><small style="color:var(--muted)">plugin.yaml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>description node in plugin.yaml.</td>
+</tr>
+<tr>
+  <td>27</td>
+  <td><code>label</code><br><small style="color:var(--muted)">plugin.yaml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>label node in plugin.yaml.</td>
+</tr>
+<tr>
+  <td>28</td>
+  <td><code>required</code><br><small style="color:var(--muted)">plugin.yaml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>required node in plugin.yaml.</td>
+</tr>
+<tr>
+  <td>29</td>
+  <td><code>type</code><br><small style="color:var(--muted)">plugin.yaml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>type node in plugin.yaml.</td>
+</tr>
+<tr>
+  <td>30</td>
+  <td><code>tags</code><br><small style="color:var(--muted)">plugin.yaml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>tags node in plugin.yaml.</td>
+</tr>
+</table>
+
+<div class="grid">
+  <div class="card">
+    <h4>Key Files</h4>
+    <table style="width:100%;font-size:0.85rem;">
+      <tr><th>File</th><th>Coverage</th></tr>
+      <tr><td><code>plugin.yaml</code></td><td>31 nodes</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h4>Design Notes</h4>
+    <p>This section comes from graphify community clustering. Relationship summary: contains x30. The diagram prioritizes high-confidence calls or usage relationships; the table keeps the broader node inventory.</p>
+  </div>
+</div>
+<hr>
+
+<!-- ====== 6. 🌀 Hermes Fractal Memory Engine ====== -->
+<h2 id="hermes-fractal-memory-engine">6. 🌀 Hermes Fractal Memory Engine</h2>
+<p>🌀 Hermes Fractal Memory Engine groups implementation around readmemd, fractal, memory, records, mostly in README.md. This section covers 19 nodes and 18 internal edges; the diagram shows only representative relationships to stay readable.</p>
+
+<div class="mermaid">
+%%{init: {"theme": "dark", "themeVariables": {"fontSize": "15.0px", "fontFamily": "Segoe UI, system-ui, sans-serif", "primaryColor": "#1e293b", "primaryTextColor": "#e2e8f0", "primaryBorderColor": "#38bdf8", "secondaryColor": "#0f172a", "tertiaryColor": "#334155", "lineColor": "#64748b", "textColor": "#e2e8f0"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 48, "rankSpacing": 64, "padding": 14, "diagramPadding": 10, "useMaxWidth": true}}}%%
+flowchart LR
+    %% Section: 🌀 Hermes Fractal Memory Engine (19 nodes, 18 edges)
+    readme_hermes_fractal_memory_engine_57d5d119("🌀 Hermes Fractal Memory Engine<br/><small>README.md</small>")
+    readme_provided_tools_toolset_fractal_memory_1c3e9402("🛠️ Provided Tools (toolset='fractal_me...<br/><small>README.md</small>")
+    readme_global_records_formal_proofs_curated_ecos_9fcad7ce("🏆 Global Records, Formal Proofs &amp; Curat...<br/><small>README.md</small>")
+    readme_f78a71af("README.md")
+    readme_1_certified_mathematical_records_formal_v_655b5a99("1. Certified Mathematical Records &amp; For...<br/><small>README.md</small>")
+    readme_2_curated_ecosystem_recognitions_benchmar_7e51ad8a("2. Curated Ecosystem Recognitions &amp; Ben...<br/><small>README.md</small>")
+    readme_1_fractal_remember_d7b0db3c("1. fractal_remember<br/><small>README.md</small>")
+    readme_2_fractal_recall_e7a565f5("2. fractal_recall<br/><small>README.md</small>")
+    readme_3_fractal_consolidate_a81efe40("3. fractal_consolidate<br/><small>README.md</small>")
+    readme_4_fractal_memory_inspect_b8352666("4. fractal_memory_inspect<br/><small>README.md</small>")
+    readme_5_fractal_memory_wipe_1af93f46("5. fractal_memory_wipe<br/><small>README.md</small>")
+    readme_in_session_slash_commands_4d664508("⌨️ In-Session Slash Commands<br/><small>README.md</small>")
+    readme_configuration_config_schema_86ab2d20("⚙️ Configuration (config_schema)<br/><small>README.md</small>")
+    readme_30_second_quick_start_0a5c97eb("⚡ 30-Second Quick Start<br/><small>README.md</small>")
+    readme_the_memory_wall_problem_in_autonomous_age_ae4e80f7("⚡ The Memory Wall Problem in Autonomous...<br/><small>README.md</small>")
+    readme_3_tier_orbital_memory_architecture_bbc41b47("🏛️ 3-Tier Orbital Memory Architecture<br/><small>README.md</small>")
+    readme_license_citations_9c43bbbc("📜 License &amp; Citations<br/><small>README.md</small>")
+    readme_disclosure_operational_scope_f2b5fdd4("🔒 Disclosure &amp; Operational Scope<br/><small>README.md</small>")
+    readme_f78a71af -->|contains| readme_hermes_fractal_memory_engine_57d5d119
+    readme_global_records_formal_proofs_curated_ecos_9fcad7ce -->|contains| readme_1_certified_mathematical_records_formal_v_655b5a99
+    readme_global_records_formal_proofs_curated_ecos_9fcad7ce -->|contains| readme_2_curated_ecosystem_recognitions_benchmar_7e51ad8a
+    readme_hermes_fractal_memory_engine_57d5d119 -->|contains| readme_provided_tools_toolset_fractal_memory_1c3e9402
+    readme_hermes_fractal_memory_engine_57d5d119 -->|contains| readme_in_session_slash_commands_4d664508
+    readme_hermes_fractal_memory_engine_57d5d119 -->|contains| readme_30_second_quick_start_0a5c97eb
+    readme_hermes_fractal_memory_engine_57d5d119 -->|contains| readme_configuration_config_schema_86ab2d20
+    readme_hermes_fractal_memory_engine_57d5d119 -->|contains| readme_global_records_formal_proofs_curated_ecos_9fcad7ce
+    readme_hermes_fractal_memory_engine_57d5d119 -->|contains| readme_license_citations_9c43bbbc
+    readme_hermes_fractal_memory_engine_57d5d119 -->|contains| readme_disclosure_operational_scope_f2b5fdd4
+    readme_hermes_fractal_memory_engine_57d5d119 -->|contains| readme_the_memory_wall_problem_in_autonomous_age_ae4e80f7
+    readme_hermes_fractal_memory_engine_57d5d119 -->|contains| readme_3_tier_orbital_memory_architecture_bbc41b47
+    readme_provided_tools_toolset_fractal_memory_1c3e9402 -->|contains| readme_1_fractal_remember_d7b0db3c
+    readme_provided_tools_toolset_fractal_memory_1c3e9402 -->|contains| readme_2_fractal_recall_e7a565f5
+    readme_provided_tools_toolset_fractal_memory_1c3e9402 -->|contains| readme_3_fractal_consolidate_a81efe40
+    readme_provided_tools_toolset_fractal_memory_1c3e9402 -->|contains| readme_4_fractal_memory_inspect_b8352666
+    readme_provided_tools_toolset_fractal_memory_1c3e9402 -->|contains| readme_5_fractal_memory_wipe_1af93f46
+    %% Omitted for readability: 1 nodes, 0 edges
+    class readme_hermes_fractal_memory_engine_57d5d119 concept;
+    class readme_provided_tools_toolset_fractal_memory_1c3e9402 concept;
+    class readme_global_records_formal_proofs_curated_ecos_9fcad7ce concept;
+    class readme_f78a71af concept;
+    class readme_1_certified_mathematical_records_formal_v_655b5a99 concept;
+    class readme_2_curated_ecosystem_recognitions_benchmar_7e51ad8a concept;
+    class readme_1_fractal_remember_d7b0db3c concept;
+    class readme_2_fractal_recall_e7a565f5 concept;
+    class readme_3_fractal_consolidate_a81efe40 concept;
+    class readme_4_fractal_memory_inspect_b8352666 concept;
+    class readme_5_fractal_memory_wipe_1af93f46 concept;
+    class readme_in_session_slash_commands_4d664508 concept;
+    class readme_configuration_config_schema_86ab2d20 concept;
+    class readme_30_second_quick_start_0a5c97eb concept;
+    class readme_the_memory_wall_problem_in_autonomous_age_ae4e80f7 concept;
+    class readme_3_tier_orbital_memory_architecture_bbc41b47 concept;
+    class readme_license_citations_9c43bbbc concept;
+    class readme_disclosure_operational_scope_f2b5fdd4 concept;
+    classDef entry fill:#422006,stroke:#fbbf24,color:#fde68a,stroke-width:1px;
+    classDef api fill:#450a0a,stroke:#f87171,color:#fee2e2,stroke-width:1px;
+    classDef async fill:#2e1065,stroke:#a78bfa,color:#ede9fe,stroke-width:1px;
+    classDef klass fill:#064e3b,stroke:#34d399,color:#d1fae5,stroke-width:1px;
+    classDef ui fill:#831843,stroke:#f472b6,color:#fce7f3,stroke-width:1px;
+    classDef module fill:#172554,stroke:#60a5fa,color:#dbeafe,stroke-width:1px;
+    classDef test fill:#3f3f46,stroke:#a1a1aa,color:#f4f4f5,stroke-width:1px;
+    classDef concept fill:#292524,stroke:#a8a29e,color:#fafaf9,stroke-dasharray:4 3;
+    classDef function fill:#0f172a,stroke:#38bdf8,color:#e0f2fe,stroke-width:1px;
+</div>
+
+<h3>Call Details</h3>
+<table class="call-table">
+<tr>
+  <th style="width:5%">#</th>
+  <th style="width:28%">Node</th>
+  <th style="width:10%">Type</th>
+  <th style="width:17%">Caller</th>
+  <th style="width:20%">Callees</th>
+  <th style="width:20%">Description</th>
+</tr>
+<tr>
+  <td>1</td>
+  <td><code>README.md</code><br><small style="color:var(--muted)">README.md</small></td>
+  <td><span class="tag tag-func">Concept</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Documentation node describing README.md.</td>
+</tr>
+<tr>
+  <td>2</td>
+  <td><code>1. Certified Mathematical Records &amp; Formal Verification (`0 sorry`)</code><br><small style="color:var(--muted)">README.md</small></td>
+  <td><span class="tag tag-func">Concept</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Documentation node describing 1. Certified Mathematical Records &amp; Formal Verification (`0 sorry`).</td>
+</tr>
+<tr>
+  <td>3</td>
+  <td><code>1. `fractal_remember`</code><br><small style="color:var(--muted)">README.md</small></td>
+  <td><span class="tag tag-func">Concept</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Documentation node describing 1. `fractal_remember`.</td>
+</tr>
+<tr>
+  <td>4</td>
+  <td><code>2. Curated Ecosystem Recognitions &amp; Benchmark Evaluations</code><br><small style="color:var(--muted)">README.md</small></td>
+  <td><span class="tag tag-func">Concept</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Documentation node describing 2. Curated Ecosystem Recognitions &amp; Benchmark Evaluations.</td>
+</tr>
+<tr>
+  <td>5</td>
+  <td><code>2. `fractal_recall`</code><br><small style="color:var(--muted)">README.md</small></td>
+  <td><span class="tag tag-func">Concept</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Documentation node describing 2. `fractal_recall`.</td>
+</tr>
+<tr>
+  <td>6</td>
+  <td><code>⚡ 30-Second Quick Start</code><br><small style="color:var(--muted)">README.md</small></td>
+  <td><span class="tag tag-func">Concept</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Documentation node describing ⚡ 30-Second Quick Start.</td>
+</tr>
+<tr>
+  <td>7</td>
+  <td><code>3. `fractal_consolidate`</code><br><small style="color:var(--muted)">README.md</small></td>
+  <td><span class="tag tag-func">Concept</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Documentation node describing 3. `fractal_consolidate`.</td>
+</tr>
+<tr>
+  <td>8</td>
+  <td><code>🏛️ 3-Tier Orbital Memory Architecture</code><br><small style="color:var(--muted)">README.md</small></td>
+  <td><span class="tag tag-func">Concept</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Documentation node describing 🏛️ 3-Tier Orbital Memory Architecture.</td>
+</tr>
+<tr>
+  <td>9</td>
+  <td><code>4. `fractal_memory_inspect`</code><br><small style="color:var(--muted)">README.md</small></td>
+  <td><span class="tag tag-func">Concept</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Documentation node describing 4. `fractal_memory_inspect`.</td>
+</tr>
+<tr>
+  <td>10</td>
+  <td><code>5. `fractal_memory_wipe`</code><br><small style="color:var(--muted)">README.md</small></td>
+  <td><span class="tag tag-func">Concept</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Documentation node describing 5. `fractal_memory_wipe`.</td>
+</tr>
+<tr>
+  <td>11</td>
+  <td><code>⚙️ Configuration (`config_schema`)</code><br><small style="color:var(--muted)">README.md</small></td>
+  <td><span class="tag tag-func">Concept</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Documentation node describing ⚙️ Configuration (`config_schema`).</td>
+</tr>
+<tr>
+  <td>12</td>
+  <td><code>🔒 Disclosure &amp; Operational Scope</code><br><small style="color:var(--muted)">README.md</small></td>
+  <td><span class="tag tag-func">Concept</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Documentation node describing 🔒 Disclosure &amp; Operational Scope.</td>
+</tr>
+<tr>
+  <td>13</td>
+  <td><code>🏆 Global Records, Formal Proofs &amp; Curated Ecosystem Recognitions</code><br><small style="color:var(--muted)">README.md</small></td>
+  <td><span class="tag tag-func">Concept</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Documentation node describing 🏆 Global Records, Formal Proofs &amp; Curated Ecosystem Recognitions.</td>
+</tr>
+<tr>
+  <td>14</td>
+  <td><code>🌀 Hermes Fractal Memory Engine</code><br><small style="color:var(--muted)">README.md</small></td>
+  <td><span class="tag tag-func">Concept</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Documentation node describing 🌀 Hermes Fractal Memory Engine.</td>
+</tr>
+<tr>
+  <td>15</td>
+  <td><code>⌨️ In-Session Slash Commands</code><br><small style="color:var(--muted)">README.md</small></td>
+  <td><span class="tag tag-func">Concept</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Documentation node describing ⌨️ In-Session Slash Commands.</td>
+</tr>
+<tr>
+  <td>16</td>
+  <td><code>📜 License &amp; Citations</code><br><small style="color:var(--muted)">README.md</small></td>
+  <td><span class="tag tag-func">Concept</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Documentation node describing 📜 License &amp; Citations.</td>
+</tr>
+<tr>
+  <td>17</td>
+  <td><code>🛠️ Provided Tools (`toolset=&quot;fractal_memory&quot;`)</code><br><small style="color:var(--muted)">README.md</small></td>
+  <td><span class="tag tag-func">Concept</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Documentation node describing 🛠️ Provided Tools (`toolset=&quot;fractal_memory&quot;`).</td>
+</tr>
+<tr>
+  <td>18</td>
+  <td><code>🧪 Testing &amp; Admission Validation</code><br><small style="color:var(--muted)">README.md</small></td>
+  <td><span class="tag tag-func">Concept</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Documentation node describing 🧪 Testing &amp; Admission Validation.</td>
+</tr>
+<tr>
+  <td>19</td>
+  <td><code>⚡ The Memory Wall Problem in Autonomous Agents</code><br><small style="color:var(--muted)">README.md</small></td>
+  <td><span class="tag tag-func">Concept</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Documentation node describing ⚡ The Memory Wall Problem in Autonomous Agents.</td>
+</tr>
+</table>
+
+<div class="grid">
+  <div class="card">
+    <h4>Key Files</h4>
+    <table style="width:100%;font-size:0.85rem;">
+      <tr><th>File</th><th>Coverage</th></tr>
+      <tr><td><code>README.md</code></td><td>19 nodes</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h4>Design Notes</h4>
+    <p>This section comes from graphify community clustering. Relationship summary: contains x18. The diagram prioritizes high-confidence calls or usage relationships; the table keeps the broader node inventory.</p>
+  </div>
+</div>
+<hr>
+
+<!-- ====== 7. hermes-catalog-entry.yaml ====== -->
+<h2 id="hermes-catalog-entry-yaml">7. hermes-catalog-entry.yaml</h2>
+<p>hermes-catalog-entry.yaml groups implementation around hermes, catalog, entryyaml, provides, mostly in hermes-catalog-entry.yaml. This section covers 18 nodes and 17 internal edges; the diagram shows only representative relationships to stay readable.</p>
+
+<div class="mermaid">
+%%{init: {"theme": "dark", "themeVariables": {"fontSize": "15.0px", "fontFamily": "Segoe UI, system-ui, sans-serif", "primaryColor": "#1e293b", "primaryTextColor": "#e2e8f0", "primaryBorderColor": "#38bdf8", "secondaryColor": "#0f172a", "tertiaryColor": "#334155", "lineColor": "#64748b", "textColor": "#e2e8f0"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 48, "rankSpacing": 64, "padding": 14, "diagramPadding": 10, "useMaxWidth": true}}}%%
+flowchart LR
+    %% Section: hermes-catalog-entry.yaml (18 nodes, 17 edges)
+    hermes_catalog_entry_1229ace0("hermes-catalog-entry.yaml")
+    hermes_catalog_entry_capabilities_38494d46("capabilities<br/><small>hermes-catalog-entry.yaml</small>")
+    hermes_catalog_entry_name_9140c5f2("name<br/><small>hermes-catalog-entry.yaml</small>")
+    hermes_catalog_entry_maintainer_6ba67da0("maintainer<br/><small>hermes-catalog-entry.yaml</small>")
+    hermes_catalog_entry_tier_7fbda5a9("tier<br/><small>hermes-catalog-entry.yaml</small>")
+    hermes_catalog_entry_category_41b31501("category<br/><small>hermes-catalog-entry.yaml</small>")
+    hermes_catalog_entry_requires_hermes_5df86562("requires_hermes<br/><small>hermes-catalog-entry.yaml</small>")
+    hermes_catalog_entry_docs_url_ed4bc697("docs_url<br/><small>hermes-catalog-entry.yaml</small>")
+    hermes_catalog_entry_readme_242dfc5a("readme<br/><small>hermes-catalog-entry.yaml</small>")
+    hermes_catalog_entry_platforms_06102ada("platforms<br/><small>hermes-catalog-entry.yaml</small>")
+    hermes_catalog_entry_repo_e84b99de("repo<br/><small>hermes-catalog-entry.yaml</small>")
+    hermes_catalog_entry_sha_a39062bd("sha<br/><small>hermes-catalog-entry.yaml</small>")
+    hermes_catalog_entry_version_588b413a("version<br/><small>hermes-catalog-entry.yaml</small>")
+    hermes_catalog_entry_description_3495a6e3("description<br/><small>hermes-catalog-entry.yaml</small>")
+    hermes_catalog_entry_capabilities_provides_tools_c75ca5e5("provides_tools<br/><small>hermes-catalog-entry.yaml</small>")
+    hermes_catalog_entry_capabilities_provides_hooks_292a1ed1("provides_hooks<br/><small>hermes-catalog-entry.yaml</small>")
+    hermes_catalog_entry_capabilities_provides_middl_f678959a("provides_middleware<br/><small>hermes-catalog-entry.yaml</small>")
+    hermes_catalog_entry_capabilities_requires_env_b371c155("requires_env<br/><small>hermes-catalog-entry.yaml</small>")
+    hermes_catalog_entry_1229ace0 -->|contains| hermes_catalog_entry_name_9140c5f2
+    hermes_catalog_entry_1229ace0 -->|contains| hermes_catalog_entry_maintainer_6ba67da0
+    hermes_catalog_entry_1229ace0 -->|contains| hermes_catalog_entry_tier_7fbda5a9
+    hermes_catalog_entry_1229ace0 -->|contains| hermes_catalog_entry_category_41b31501
+    hermes_catalog_entry_1229ace0 -->|contains| hermes_catalog_entry_requires_hermes_5df86562
+    hermes_catalog_entry_1229ace0 -->|contains| hermes_catalog_entry_docs_url_ed4bc697
+    hermes_catalog_entry_1229ace0 -->|contains| hermes_catalog_entry_readme_242dfc5a
+    hermes_catalog_entry_1229ace0 -->|contains| hermes_catalog_entry_platforms_06102ada
+    hermes_catalog_entry_1229ace0 -->|contains| hermes_catalog_entry_capabilities_38494d46
+    hermes_catalog_entry_1229ace0 -->|contains| hermes_catalog_entry_repo_e84b99de
+    hermes_catalog_entry_1229ace0 -->|contains| hermes_catalog_entry_sha_a39062bd
+    hermes_catalog_entry_1229ace0 -->|contains| hermes_catalog_entry_version_588b413a
+    hermes_catalog_entry_1229ace0 -->|contains| hermes_catalog_entry_description_3495a6e3
+    hermes_catalog_entry_capabilities_38494d46 -->|contains| hermes_catalog_entry_capabilities_provides_tools_c75ca5e5
+    hermes_catalog_entry_capabilities_38494d46 -->|contains| hermes_catalog_entry_capabilities_provides_hooks_292a1ed1
+    hermes_catalog_entry_capabilities_38494d46 -->|contains| hermes_catalog_entry_capabilities_provides_middl_f678959a
+    hermes_catalog_entry_capabilities_38494d46 -->|contains| hermes_catalog_entry_capabilities_requires_env_b371c155
+    class hermes_catalog_entry_1229ace0 function;
+    class hermes_catalog_entry_capabilities_38494d46 function;
+    class hermes_catalog_entry_name_9140c5f2 function;
+    class hermes_catalog_entry_maintainer_6ba67da0 function;
+    class hermes_catalog_entry_tier_7fbda5a9 function;
+    class hermes_catalog_entry_category_41b31501 function;
+    class hermes_catalog_entry_requires_hermes_5df86562 function;
+    class hermes_catalog_entry_docs_url_ed4bc697 function;
+    class hermes_catalog_entry_readme_242dfc5a function;
+    class hermes_catalog_entry_platforms_06102ada function;
+    class hermes_catalog_entry_repo_e84b99de function;
+    class hermes_catalog_entry_sha_a39062bd function;
+    class hermes_catalog_entry_version_588b413a function;
+    class hermes_catalog_entry_description_3495a6e3 function;
+    class hermes_catalog_entry_capabilities_provides_tools_c75ca5e5 function;
+    class hermes_catalog_entry_capabilities_provides_hooks_292a1ed1 ui;
+    class hermes_catalog_entry_capabilities_provides_middl_f678959a function;
+    class hermes_catalog_entry_capabilities_requires_env_b371c155 function;
+    classDef entry fill:#422006,stroke:#fbbf24,color:#fde68a,stroke-width:1px;
+    classDef api fill:#450a0a,stroke:#f87171,color:#fee2e2,stroke-width:1px;
+    classDef async fill:#2e1065,stroke:#a78bfa,color:#ede9fe,stroke-width:1px;
+    classDef klass fill:#064e3b,stroke:#34d399,color:#d1fae5,stroke-width:1px;
+    classDef ui fill:#831843,stroke:#f472b6,color:#fce7f3,stroke-width:1px;
+    classDef module fill:#172554,stroke:#60a5fa,color:#dbeafe,stroke-width:1px;
+    classDef test fill:#3f3f46,stroke:#a1a1aa,color:#f4f4f5,stroke-width:1px;
+    classDef concept fill:#292524,stroke:#a8a29e,color:#fafaf9,stroke-dasharray:4 3;
+    classDef function fill:#0f172a,stroke:#38bdf8,color:#e0f2fe,stroke-width:1px;
+</div>
+
+<h3>Call Details</h3>
+<table class="call-table">
+<tr>
+  <th style="width:5%">#</th>
+  <th style="width:28%">Node</th>
+  <th style="width:10%">Type</th>
+  <th style="width:17%">Caller</th>
+  <th style="width:20%">Callees</th>
+  <th style="width:20%">Description</th>
+</tr>
+<tr>
+  <td>1</td>
+  <td><code>hermes-catalog-entry.yaml</code><br><small style="color:var(--muted)">hermes-catalog-entry.yaml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>hermes-catalog-entry.yaml node in hermes-catalog-entry.yaml.</td>
+</tr>
+<tr>
+  <td>2</td>
+  <td><code>capabilities</code><br><small style="color:var(--muted)">hermes-catalog-entry.yaml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>capabilities node in hermes-catalog-entry.yaml.</td>
+</tr>
+<tr>
+  <td>3</td>
+  <td><code>provides_hooks</code><br><small style="color:var(--muted)">hermes-catalog-entry.yaml</small></td>
+  <td><span class="tag tag-hook">UI</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>provides_hooks node in hermes-catalog-entry.yaml.</td>
+</tr>
+<tr>
+  <td>4</td>
+  <td><code>provides_middleware</code><br><small style="color:var(--muted)">hermes-catalog-entry.yaml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>provides_middleware node in hermes-catalog-entry.yaml.</td>
+</tr>
+<tr>
+  <td>5</td>
+  <td><code>provides_tools</code><br><small style="color:var(--muted)">hermes-catalog-entry.yaml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>provides_tools node in hermes-catalog-entry.yaml.</td>
+</tr>
+<tr>
+  <td>6</td>
+  <td><code>requires_env</code><br><small style="color:var(--muted)">hermes-catalog-entry.yaml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>requires_env node in hermes-catalog-entry.yaml.</td>
+</tr>
+<tr>
+  <td>7</td>
+  <td><code>category</code><br><small style="color:var(--muted)">hermes-catalog-entry.yaml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>category node in hermes-catalog-entry.yaml.</td>
+</tr>
+<tr>
+  <td>8</td>
+  <td><code>description</code><br><small style="color:var(--muted)">hermes-catalog-entry.yaml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>description node in hermes-catalog-entry.yaml.</td>
+</tr>
+<tr>
+  <td>9</td>
+  <td><code>docs_url</code><br><small style="color:var(--muted)">hermes-catalog-entry.yaml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>docs_url node in hermes-catalog-entry.yaml.</td>
+</tr>
+<tr>
+  <td>10</td>
+  <td><code>maintainer</code><br><small style="color:var(--muted)">hermes-catalog-entry.yaml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>maintainer node in hermes-catalog-entry.yaml.</td>
+</tr>
+<tr>
+  <td>11</td>
+  <td><code>name</code><br><small style="color:var(--muted)">hermes-catalog-entry.yaml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>name node in hermes-catalog-entry.yaml.</td>
+</tr>
+<tr>
+  <td>12</td>
+  <td><code>platforms</code><br><small style="color:var(--muted)">hermes-catalog-entry.yaml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>platforms node in hermes-catalog-entry.yaml.</td>
+</tr>
+<tr>
+  <td>13</td>
+  <td><code>readme</code><br><small style="color:var(--muted)">hermes-catalog-entry.yaml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>readme node in hermes-catalog-entry.yaml.</td>
+</tr>
+<tr>
+  <td>14</td>
+  <td><code>repo</code><br><small style="color:var(--muted)">hermes-catalog-entry.yaml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>repo node in hermes-catalog-entry.yaml.</td>
+</tr>
+<tr>
+  <td>15</td>
+  <td><code>requires_hermes</code><br><small style="color:var(--muted)">hermes-catalog-entry.yaml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>requires_hermes node in hermes-catalog-entry.yaml.</td>
+</tr>
+<tr>
+  <td>16</td>
+  <td><code>sha</code><br><small style="color:var(--muted)">hermes-catalog-entry.yaml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>sha node in hermes-catalog-entry.yaml.</td>
+</tr>
+<tr>
+  <td>17</td>
+  <td><code>tier</code><br><small style="color:var(--muted)">hermes-catalog-entry.yaml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>tier node in hermes-catalog-entry.yaml.</td>
+</tr>
+<tr>
+  <td>18</td>
+  <td><code>version</code><br><small style="color:var(--muted)">hermes-catalog-entry.yaml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>version node in hermes-catalog-entry.yaml.</td>
+</tr>
+</table>
+
+<div class="grid">
+  <div class="card">
+    <h4>Key Files</h4>
+    <table style="width:100%;font-size:0.85rem;">
+      <tr><th>File</th><th>Coverage</th></tr>
+      <tr><td><code>hermes-catalog-entry.yaml</code></td><td>18 nodes</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h4>Design Notes</h4>
+    <p>This section comes from graphify community clustering. Relationship summary: contains x17. The diagram prioritizes high-confidence calls or usage relationships; the table keeps the broader node inventory.</p>
+  </div>
+</div>
+<hr>
+
+<!-- ====== 8. hermes-fractal-memory ====== -->
+<h2 id="hermes-fractal-memory">8. hermes-fractal-memory</h2>
+<p>hermes-fractal-memory groups implementation around hermes, fractal, memory, pyprojecttoml, mostly in pyproject.toml. This section covers 1 nodes and 0 internal edges; the diagram shows only representative relationships to stay readable.</p>
+
+<div class="mermaid">
+%%{init: {"theme": "dark", "themeVariables": {"fontSize": "15.0px", "fontFamily": "Segoe UI, system-ui, sans-serif", "primaryColor": "#1e293b", "primaryTextColor": "#e2e8f0", "primaryBorderColor": "#38bdf8", "secondaryColor": "#0f172a", "tertiaryColor": "#334155", "lineColor": "#64748b", "textColor": "#e2e8f0"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 48, "rankSpacing": 64, "padding": 14, "diagramPadding": 10, "useMaxWidth": true}}}%%
+flowchart LR
+    %% Section: hermes-fractal-memory (1 nodes, 0 edges)
+    pkg_hermes_fractal_memory_5b316aad("hermes-fractal-memory<br/><small>pyproject.toml</small>")
+    class pkg_hermes_fractal_memory_5b316aad module;
+    classDef entry fill:#422006,stroke:#fbbf24,color:#fde68a,stroke-width:1px;
+    classDef api fill:#450a0a,stroke:#f87171,color:#fee2e2,stroke-width:1px;
+    classDef async fill:#2e1065,stroke:#a78bfa,color:#ede9fe,stroke-width:1px;
+    classDef klass fill:#064e3b,stroke:#34d399,color:#d1fae5,stroke-width:1px;
+    classDef ui fill:#831843,stroke:#f472b6,color:#fce7f3,stroke-width:1px;
+    classDef module fill:#172554,stroke:#60a5fa,color:#dbeafe,stroke-width:1px;
+    classDef test fill:#3f3f46,stroke:#a1a1aa,color:#f4f4f5,stroke-width:1px;
+    classDef concept fill:#292524,stroke:#a8a29e,color:#fafaf9,stroke-dasharray:4 3;
+    classDef function fill:#0f172a,stroke:#38bdf8,color:#e0f2fe,stroke-width:1px;
+</div>
+
+<h3>Call Details</h3>
+<table class="call-table">
+<tr>
+  <th style="width:5%">#</th>
+  <th style="width:28%">Node</th>
+  <th style="width:10%">Type</th>
+  <th style="width:17%">Caller</th>
+  <th style="width:20%">Callees</th>
+  <th style="width:20%">Description</th>
+</tr>
+<tr>
+  <td>1</td>
+  <td><code>hermes-fractal-memory</code><br><small style="color:var(--muted)">pyproject.toml</small></td>
+  <td><span class="tag tag-class">Module</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>hermes-fractal-memory node in pyproject.toml.</td>
+</tr>
+</table>
+
+<div class="grid">
+  <div class="card">
+    <h4>Key Files</h4>
+    <table style="width:100%;font-size:0.85rem;">
+      <tr><th>File</th><th>Coverage</th></tr>
+      <tr><td><code>pyproject.toml</code></td><td>1 nodes</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h4>Design Notes</h4>
+    <p>This section comes from graphify community clustering. Relationship summary: No high-confidence call edges detected. The diagram prioritizes high-confidence calls or usage relationships; the table keeps the broader node inventory.</p>
+  </div>
+</div>
+<hr>
+
+<h2 id="stats">Project Statistics</h2>
+
+<div class="grid">
+  <div class="card">
+    <h4>Graph</h4>
+    <table style="width:100%;font-size:0.85rem;">
+      <tr><td>Nodes</td><td>256</td></tr>
+      <tr><td>Edges</td><td>419</td></tr>
+      <tr><td>Hyperedges</td><td>0</td></tr>
+      <tr><td>Communities</td><td>13</td></tr>
+      <tr><td>Documented Sections</td><td>7</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h4>Edge Confidence</h4>
+    <table style="width:100%;font-size:0.85rem;">
+      <tr><td>EXTRACTED</td><td>402</td></tr>
+      <tr><td>INFERRED</td><td>17</td></tr>
+      <tr><td>AMBIGUOUS</td><td>0</td></tr>
+    </table>
+  </div>
+</div>
+
+<div style="text-align:center; padding:40px 0; color: var(--muted); font-size:0.9rem;">
+  <p>hermes-fractal-memory — Architecture Documentation</p>
+  <p>Generated: 2026-11-25 00:07 UTC · graphify callflow-html</p>
+</div>
+
+</div><!-- .container -->
+
+<script>
+(function () {
+  const mermaidConfig = {
+    startOnLoad: false,
+    theme: 'dark',
+    securityLevel: 'loose',
+    flowchart: { htmlLabels: true, useMaxWidth: true },
+    themeVariables: {
+      primaryColor: '#1e293b',
+      primaryTextColor: '#e2e8f0',
+      primaryBorderColor: '#38bdf8',
+      secondaryColor: '#0f172a',
+      tertiaryColor: '#334155',
+      lineColor: '#64748b',
+      textColor: '#e2e8f0',
+    }
+  };
+
+  mermaid.initialize(mermaidConfig);
+
+  function clamp(value, min, max) {
+    return Math.min(max, Math.max(min, value));
+  }
+
+  function enhanceMermaidDiagrams() {
+    document.querySelectorAll('.mermaid').forEach((container) => {
+      if (container.dataset.zoomReady === 'true') return;
+      const svg = container.querySelector('svg');
+      if (!svg) return;
+
+      container.dataset.zoomReady = 'true';
+      container.classList.add('is-enhanced');
+
+      const viewport = document.createElement('div');
+      viewport.className = 'mermaid-viewport';
+      svg.parentNode.insertBefore(viewport, svg);
+      viewport.appendChild(svg);
+
+      const toolbar = document.createElement('div');
+      toolbar.className = 'mermaid-toolbar';
+      toolbar.innerHTML = [
+        '<button type="button" data-action="zoom-out" title="Zoom out">-</button>',
+        '<span class="zoom-level" data-role="level">100%</span>',
+        '<button type="button" data-action="zoom-in" title="Zoom in">+</button>',
+        '<button type="button" data-action="fit" title="Fit width">Fit</button>',
+        '<button type="button" data-action="reset" title="Reset view">Reset</button>'
+      ].join('');
+      container.insertBefore(toolbar, viewport);
+
+      const state = { scale: 1, x: 0, y: 0, dragging: false, startX: 0, startY: 0, originX: 0, originY: 0 };
+      const level = toolbar.querySelector('[data-role="level"]');
+
+      function applyTransform() {
+        svg.style.transform = `translate(${state.x}px, ${state.y}px) scale(${state.scale})`;
+        level.textContent = `${Math.round(state.scale * 100)}%`;
+      }
+
+      function zoomBy(delta) {
+        state.scale = clamp(state.scale + delta, 0.25, 3);
+        applyTransform();
+      }
+
+      function reset() {
+        state.scale = 1;
+        state.x = 0;
+        state.y = 0;
+        applyTransform();
+      }
+
+      function fitWidth() {
+        const rawWidth = svg.viewBox && svg.viewBox.baseVal && svg.viewBox.baseVal.width
+          ? svg.viewBox.baseVal.width
+          : svg.getBoundingClientRect().width / state.scale;
+        if (!rawWidth) {
+          reset();
+          return;
+        }
+        state.scale = clamp((viewport.clientWidth - 48) / rawWidth, 0.25, 1.4);
+        state.x = 0;
+        state.y = 0;
+        applyTransform();
+      }
+
+      toolbar.addEventListener('click', (event) => {
+        const button = event.target.closest('button[data-action]');
+        if (!button) return;
+        const action = button.dataset.action;
+        if (action === 'zoom-in') zoomBy(0.15);
+        if (action === 'zoom-out') zoomBy(-0.15);
+        if (action === 'fit') fitWidth();
+        if (action === 'reset') reset();
+      });
+
+      viewport.addEventListener('wheel', (event) => {
+        if (!event.ctrlKey && !event.metaKey) return;
+        event.preventDefault();
+        zoomBy(event.deltaY < 0 ? 0.1 : -0.1);
+      }, { passive: false });
+
+      viewport.addEventListener('pointerdown', (event) => {
+        if (event.button !== 0) return;
+        state.dragging = true;
+        state.startX = event.clientX;
+        state.startY = event.clientY;
+        state.originX = state.x;
+        state.originY = state.y;
+        viewport.classList.add('is-dragging');
+        viewport.setPointerCapture(event.pointerId);
+      });
+
+      viewport.addEventListener('pointermove', (event) => {
+        if (!state.dragging) return;
+        state.x = state.originX + event.clientX - state.startX;
+        state.y = state.originY + event.clientY - state.startY;
+        applyTransform();
+      });
+
+      function endDrag(event) {
+        if (!state.dragging) return;
+        state.dragging = false;
+        viewport.classList.remove('is-dragging');
+        if (viewport.hasPointerCapture(event.pointerId)) {
+          viewport.releasePointerCapture(event.pointerId);
+        }
+      }
+
+      viewport.addEventListener('pointerup', endDrag);
+      viewport.addEventListener('pointercancel', endDrag);
+      applyTransform();
+    });
+  }
+
+  function renderMermaid() {
+    const result = mermaid.run
+      ? mermaid.run({ querySelector: '.mermaid' })
+      : Promise.resolve();
+    Promise.resolve(result)
+      .then(enhanceMermaidDiagrams)
+      .catch((error) => {
+        console.error('Mermaid render failed:', error);
+        enhanceMermaidDiagrams();
+      });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', renderMermaid);
+  } else {
+    renderMermaid();
+  }
+})();
+</script>
+
+</body>
+</html>
